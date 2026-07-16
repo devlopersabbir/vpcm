@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var identityFile string
+
 var rootCmd = &cobra.Command{
 	Use:   "vpsm",
 	Short: "VPSM - VPS Manager CLI",
@@ -62,20 +64,12 @@ var doctorCmd = &cobra.Command{
 		}
 		fmt.Println("[✓] Config validated")
 
-		db, err := database.Init(cfg.Database.Path)
+		_, err = database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 		if err != nil {
 			fmt.Printf("[✗] Database connection failed: %v\n", err)
 			return
 		}
 		fmt.Println("[✓] Database connection succeeded")
-
-		// Migrate skeleton schema
-		err = db.AutoMigrate(&inventory.Server{}, &inventory.Tag{}, &inventory.Software{})
-		if err != nil {
-			fmt.Printf("[✗] Migration failed: %v\n", err)
-			return
-		}
-		fmt.Println("[✓] Schema integrity checked")
 	},
 }
 
@@ -90,11 +84,11 @@ var serverListCmd = &cobra.Command{
 	Short: "List all monitored servers",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, _ := config.Load()
-		db, err := database.Init(cfg.Database.Path)
+		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 		if err != nil {
 			return err
 		}
-		repo := inventory.NewRepository(db)
+		repo := inventory.NewMongoRepository(db)
 		servers, err := repo.List(cmd.Context())
 		if err != nil {
 			return err
@@ -112,6 +106,7 @@ var serverListCmd = &cobra.Command{
 				s.Username,
 				s.Host,
 				strconv.Itoa(s.Port),
+				s.AuthType,
 				s.Provider,
 			})
 		}
@@ -119,7 +114,7 @@ var serverListCmd = &cobra.Command{
 		tbl := table.New().
 			Border(lipgloss.NormalBorder()).
 			BorderStyle(re.NewStyle().Foreground(gray)).
-			Headers("ID", "Name", "Username", "Host", "Port", "Provider").
+			Headers("ID", "Name", "Username", "Host", "Port", "Auth Type", "Provider").
 			Rows(rows...)
 
 		tbl.StyleFunc(func(row, col int) lipgloss.Style {
@@ -145,12 +140,12 @@ var serverAddCmd = &cobra.Command{
 		host := args[1]
 
 		cfg, _ := config.Load()
-		db, err := database.Init(cfg.Database.Path)
+		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 		if err != nil {
 			return err
 		}
 
-		repo := inventory.NewRepository(db)
+		repo := inventory.NewMongoRepository(db)
 		svc := inventory.NewService(repo)
 
 		server := &inventory.Server{
@@ -178,12 +173,12 @@ var serverRemoveCmd = &cobra.Command{
 		input := args[0]
 
 		cfg, _ := config.Load()
-		db, err := database.Init(cfg.Database.Path)
+		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 		if err != nil {
 			return err
 		}
 
-		repo := inventory.NewRepository(db)
+		repo := inventory.NewMongoRepository(db)
 		svc := inventory.NewService(repo)
 
 		servers, err := repo.List(cmd.Context())
@@ -233,12 +228,12 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 	input := args[0]
 
 	cfg, _ := config.Load()
-	db, err := database.Init(cfg.Database.Path)
+	db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 	if err != nil {
 		return err
 	}
 
-	repo := inventory.NewRepository(db)
+	repo := inventory.NewMongoRepository(db)
 	svc := inventory.NewService(repo)
 
 	// Get all servers to check by ID/Name/Host
@@ -298,16 +293,40 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	if identityFile != "" {
+		keyBytes, err := os.ReadFile(identityFile)
+		if err != nil {
+			return fmt.Errorf("failed to read identity file %s: %w", identityFile, err)
+		}
+		target.AuthType = "key"
+		target.AuthSecret = string(keyBytes)
+	}
+
 	sshSvc := ssh.NewService(cfg.SSH.Timeout)
 	var client ssh.Client
 
-	// Try saved credentials first
+	// Try saved credentials first (or loaded key)
 	if target.AuthSecret != "" {
-		client, err = sshSvc.Connect(cmd.Context(), target.Host, target.Port, target.Username, "password", target.AuthSecret)
+		client, err = sshSvc.Connect(cmd.Context(), target.Host, target.Port, target.Username, target.AuthType, target.AuthSecret)
+		if err == nil {
+			// Save new server or update existing credentials
+			if target.ID == 0 {
+				if err := svc.AddServer(cmd.Context(), target); err != nil {
+					return fmt.Errorf("failed to save server to database: %w", err)
+				}
+			} else if identityFile != "" {
+				if err := svc.UpdateServer(cmd.Context(), target); err != nil {
+					return fmt.Errorf("failed to update server credentials: %w", err)
+				}
+			}
+		}
 	}
 
-	// Prompt if no credentials or connection failed
+	// Prompt for password if no credentials or connection failed
 	if client == nil || err != nil {
+		if identityFile != "" {
+			return fmt.Errorf("SSH key connection failed: %w", err)
+		}
 		fmt.Printf("Enter SSH password for %s@%s: ", target.Username, target.Host)
 		var password string
 		_, err = fmt.Scanln(&password)
@@ -348,23 +367,25 @@ var sshCmd = &cobra.Command{
 
 func init() {
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd)
+	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd)
 }
 
 func main() {
 	if len(os.Args) > 1 {
-		cmdName := os.Args[1]
-		// Check if it's not a known subcommand and not a flag
-		isKnownCommand := false
+		// Check if any argument is a known subcommand
+		hasSubcommand := false
 		knownSubcommands := []string{"completion", "config", "doctor", "help", "server", "version", "ssh"}
-		for _, sc := range knownSubcommands {
-			if cmdName == sc {
-				isKnownCommand = true
-				break
+		for _, arg := range os.Args[1:] {
+			for _, sc := range knownSubcommands {
+				if arg == sc {
+					hasSubcommand = true
+					break
+				}
 			}
 		}
 
-		if !isKnownCommand && !strings.HasPrefix(cmdName, "-") {
+		if !hasSubcommand {
 			// Rewrite os.Args to insert "ssh" at index 1
 			newArgs := make([]string, 0, len(os.Args)+1)
 			newArgs = append(newArgs, os.Args[0], "ssh")

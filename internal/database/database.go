@@ -1,29 +1,36 @@
 package database
 
 import (
+	"context"
 	"log/slog"
-	"os"
-	"path/filepath"
+	"time"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var DB *gorm.DB
+var MongoClient *mongo.Client
+var MongoDB *mongo.Database
 
-// Init establishes a database connection and sets up SQLite path if needed.
-func Init(dbPath string) (*gorm.DB, error) {
-	dir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, err
-	}
+// InitMongo establishes a connection to MongoDB and ping the host.
+func InitMongo(uri string, dbName string) (*mongo.Database, error) {
+	slog.Debug("Connecting to MongoDB", "uri", uri, "db", dbName)
 
-	slog.Debug("Connecting to SQLite database", "path", dbPath)
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err
 	}
 
-	DB = db
-	return db, nil
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	MongoClient = client
+	MongoDB = client.Database(dbName)
+
+	return MongoDB, nil
 }

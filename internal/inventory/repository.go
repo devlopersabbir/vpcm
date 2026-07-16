@@ -3,27 +3,62 @@ package inventory
 import (
 	"context"
 	"errors"
+	"time"
 
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-type sqlServerRepository struct {
-	db *gorm.DB
+type mongoServerRepository struct {
+	db   *mongo.Database
+	coll *mongo.Collection
 }
 
-func NewRepository(db *gorm.DB) ServerRepository {
-	return &sqlServerRepository{db: db}
+type Counter struct {
+	ID    string `bson:"_id"`
+	Value uint   `bson:"value"`
 }
 
-func (r *sqlServerRepository) Create(ctx context.Context, server *Server) error {
-	return r.db.WithContext(ctx).Create(server).Error
-}
+func getNextSequence(ctx context.Context, db *mongo.Database, sequenceName string) (uint, error) {
+	coll := db.Collection("counters")
+	filter := bson.M{"_id": sequenceName}
+	update := bson.M{"$inc": bson.M{"value": 1}}
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 
-func (r *sqlServerRepository) GetByID(ctx context.Context, id uint) (*Server, error) {
-	var server Server
-	err := r.db.WithContext(ctx).Preload("Tags").Preload("Software").First(&server, id).Error
+	var counter Counter
+	err := coll.FindOneAndUpdate(ctx, filter, update, opts).Decode(&counter)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, err
+	}
+	return counter.Value, nil
+}
+
+func NewMongoRepository(db *mongo.Database) ServerRepository {
+	return &mongoServerRepository{
+		db:   db,
+		coll: db.Collection("servers"),
+	}
+}
+
+func (r *mongoServerRepository) Create(ctx context.Context, server *Server) error {
+	id, err := getNextSequence(ctx, r.db, "server_id")
+	if err != nil {
+		return err
+	}
+	server.ID = id
+	server.CreatedAt = time.Now()
+	server.UpdatedAt = time.Now()
+
+	_, err = r.coll.InsertOne(ctx, server)
+	return err
+}
+
+func (r *mongoServerRepository) GetByID(ctx context.Context, id uint) (*Server, error) {
+	var server Server
+	err := r.coll.FindOne(ctx, bson.M{"id": id}).Decode(&server)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrServerNotFound
 		}
 		return nil, err
@@ -31,11 +66,11 @@ func (r *sqlServerRepository) GetByID(ctx context.Context, id uint) (*Server, er
 	return &server, nil
 }
 
-func (r *sqlServerRepository) GetByUUID(ctx context.Context, uuid string) (*Server, error) {
+func (r *mongoServerRepository) GetByUUID(ctx context.Context, uuid string) (*Server, error) {
 	var server Server
-	err := r.db.WithContext(ctx).Preload("Tags").Preload("Software").Where("uuid = ?", uuid).First(&server).Error
+	err := r.coll.FindOne(ctx, bson.M{"uuid": uuid}).Decode(&server)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrServerNotFound
 		}
 		return nil, err
@@ -43,55 +78,60 @@ func (r *sqlServerRepository) GetByUUID(ctx context.Context, uuid string) (*Serv
 	return &server, nil
 }
 
-func (r *sqlServerRepository) List(ctx context.Context) ([]Server, error) {
+func (r *mongoServerRepository) List(ctx context.Context) ([]Server, error) {
+	cursor, err := r.coll.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
 	var servers []Server
-	err := r.db.WithContext(ctx).Preload("Tags").Find(&servers).Error
-	return servers, err
-}
-
-func (r *sqlServerRepository) Update(ctx context.Context, server *Server) error {
-	return r.db.WithContext(ctx).Save(server).Error
-}
-
-func (r *sqlServerRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&Server{}, id)
-	if result.Error != nil {
-		return result.Error
+	if err := cursor.All(ctx, &servers); err != nil {
+		return nil, err
 	}
-	if result.RowsAffected == 0 {
+	if servers == nil {
+		servers = []Server{}
+	}
+	return servers, nil
+}
+
+func (r *mongoServerRepository) Update(ctx context.Context, server *Server) error {
+	server.UpdatedAt = time.Now()
+	_, err := r.coll.ReplaceOne(ctx, bson.M{"id": server.ID}, server)
+	return err
+}
+
+func (r *mongoServerRepository) Delete(ctx context.Context, id uint) error {
+	res, err := r.coll.DeleteOne(ctx, bson.M{"id": id})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
 		return ErrServerNotFound
 	}
 	return nil
 }
 
-func (r *sqlServerRepository) AddTag(ctx context.Context, serverID uint, tagName string) error {
+func (r *mongoServerRepository) AddTag(ctx context.Context, serverID uint, tagName string) error {
 	var server Server
-	if err := r.db.WithContext(ctx).First(&server, serverID).Error; err != nil {
+	err := r.coll.FindOne(ctx, bson.M{"id": serverID}).Decode(&server)
+	if err != nil {
 		return err
 	}
-	var tag Tag
-	err := r.db.WithContext(ctx).Where("name = ?", tagName).First(&tag).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			tag = Tag{Name: tagName}
-			if err := r.db.WithContext(ctx).Create(&tag).Error; err != nil {
-				return err
-			}
-		} else {
-			return err
+
+	// Add unique tag
+	for _, t := range server.Tags {
+		if t.Name == tagName {
+			return nil
 		}
 	}
-	return r.db.WithContext(ctx).Model(&server).Association("Tags").Append(&tag)
+
+	newTag := Tag{Name: tagName}
+	_, err = r.coll.UpdateOne(ctx, bson.M{"id": serverID}, bson.M{"$push": bson.M{"tags": newTag}})
+	return err
 }
 
-func (r *sqlServerRepository) RemoveTag(ctx context.Context, serverID uint, tagName string) error {
-	var server Server
-	if err := r.db.WithContext(ctx).First(&server, serverID).Error; err != nil {
-		return err
-	}
-	var tag Tag
-	if err := r.db.WithContext(ctx).Where("name = ?", tagName).First(&tag).Error; err != nil {
-		return err
-	}
-	return r.db.WithContext(ctx).Model(&server).Association("Tags").Delete(&tag)
+func (r *mongoServerRepository) RemoveTag(ctx context.Context, serverID uint, tagName string) error {
+	_, err := r.coll.UpdateOne(ctx, bson.M{"id": serverID}, bson.M{"$pull": bson.M{"tags": bson.M{"name": tagName}}})
+	return err
 }

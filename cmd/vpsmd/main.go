@@ -20,7 +20,7 @@ func main() {
 
 	logger.Init(cfg.Logging.Level, cfg.Logging.Format, os.Stdout)
 
-	_, err = database.Init(cfg.Database.Path)
+	_, err = database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 	if err != nil {
 		log.Fatalf("failed to init database: %v", err)
 	}

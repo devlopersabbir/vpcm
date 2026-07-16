@@ -21,6 +21,8 @@ type Config struct {
 type DatabaseConfig struct {
 	Driver string `mapstructure:"driver"`
 	Path   string `mapstructure:"path"`
+	URI    string `mapstructure:"uri"`
+	Name   string `mapstructure:"name"`
 }
 
 type APIConfig struct {
@@ -51,8 +53,9 @@ var CConfig Config
 // Load loads config from default file, overrides from environment and/or flags
 func Load() (*Config, error) {
 	// Defaults
-	viper.SetDefault("database.driver", "sqlite")
-	viper.SetDefault("database.path", filepath.Join(os.Getenv("HOME"), ".local/share/vpsm/vpsm.db"))
+	viper.SetDefault("database.driver", "mongodb")
+	viper.SetDefault("database.uri", "mongodb://187.77.151.75:27017")
+	viper.SetDefault("database.name", "vpsm")
 	viper.SetDefault("api.enabled", false)
 	viper.SetDefault("api.host", "127.0.0.1")
 	viper.SetDefault("api.port", 8080)

@@ -20,20 +20,15 @@ func main() {
 
 	logger.Init(cfg.Logging.Level, cfg.Logging.Format, os.Stdout)
 
-	db, err := database.Init(cfg.Database.Path)
+	db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 	if err != nil {
 		log.Fatalf("failed to init database: %v", err)
 	}
 
-	// Auto migrate schema
-	if err := db.AutoMigrate(&inventory.Server{}, &inventory.Tag{}, &inventory.Software{}, &notes.Note{}); err != nil {
-		log.Fatalf("migration failed: %v", err)
-	}
-
-	invRepo := inventory.NewRepository(db)
+	invRepo := inventory.NewMongoRepository(db)
 	invSvc := inventory.NewService(invRepo)
 
-	noteRepo := notes.NewRepository(db)
+	noteRepo := notes.NewMongoRepository(db)
 	noteSvc := notes.NewService(noteRepo)
 
 	server := api.NewServer(invSvc, noteSvc)

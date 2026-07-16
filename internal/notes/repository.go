@@ -3,29 +3,64 @@ package notes
 import (
 	"context"
 	"errors"
+	"time"
 
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var ErrNoteNotFound = errors.New("note not found")
 
-type sqlNoteRepository struct {
-	db *gorm.DB
+type mongoNoteRepository struct {
+	db   *mongo.Database
+	coll *mongo.Collection
 }
 
-func NewRepository(db *gorm.DB) NoteRepository {
-	return &sqlNoteRepository{db: db}
+type Counter struct {
+	ID    string `bson:"_id"`
+	Value uint   `bson:"value"`
 }
 
-func (r *sqlNoteRepository) Create(ctx context.Context, note *Note) error {
-	return r.db.WithContext(ctx).Create(note).Error
-}
+func getNextSequence(ctx context.Context, db *mongo.Database, sequenceName string) (uint, error) {
+	coll := db.Collection("counters")
+	filter := bson.M{"_id": sequenceName}
+	update := bson.M{"$inc": bson.M{"value": 1}}
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 
-func (r *sqlNoteRepository) GetByID(ctx context.Context, id uint) (*Note, error) {
-	var note Note
-	err := r.db.WithContext(ctx).First(&note, id).Error
+	var counter Counter
+	err := coll.FindOneAndUpdate(ctx, filter, update, opts).Decode(&counter)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, err
+	}
+	return counter.Value, nil
+}
+
+func NewMongoRepository(db *mongo.Database) NoteRepository {
+	return &mongoNoteRepository{
+		db:   db,
+		coll: db.Collection("notes"),
+	}
+}
+
+func (r *mongoNoteRepository) Create(ctx context.Context, note *Note) error {
+	id, err := getNextSequence(ctx, r.db, "note_id")
+	if err != nil {
+		return err
+	}
+	note.ID = id
+	note.CreatedAt = time.Now()
+	note.UpdatedAt = time.Now()
+
+	_, err = r.coll.InsertOne(ctx, note)
+	return err
+}
+
+func (r *mongoNoteRepository) GetByID(ctx context.Context, id uint) (*Note, error) {
+	var note Note
+	err := r.coll.FindOne(ctx, bson.M{"id": id}).Decode(&note)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrNoteNotFound
 		}
 		return nil, err
@@ -33,22 +68,35 @@ func (r *sqlNoteRepository) GetByID(ctx context.Context, id uint) (*Note, error)
 	return &note, nil
 }
 
-func (r *sqlNoteRepository) ListByServer(ctx context.Context, serverID uint) ([]Note, error) {
-	var notes []Note
-	err := r.db.WithContext(ctx).Where("server_id = ?", serverID).Find(&notes).Error
-	return notes, err
-}
-
-func (r *sqlNoteRepository) Update(ctx context.Context, note *Note) error {
-	return r.db.WithContext(ctx).Save(note).Error
-}
-
-func (r *sqlNoteRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&Note{}, id)
-	if result.Error != nil {
-		return result.Error
+func (r *mongoNoteRepository) ListByServer(ctx context.Context, serverID uint) ([]Note, error) {
+	cursor, err := r.coll.Find(ctx, bson.M{"server_id": serverID})
+	if err != nil {
+		return nil, err
 	}
-	if result.RowsAffected == 0 {
+	defer cursor.Close(ctx)
+
+	var notesList []Note
+	if err := cursor.All(ctx, &notesList); err != nil {
+		return nil, err
+	}
+	if notesList == nil {
+		notesList = []Note{}
+	}
+	return notesList, nil
+}
+
+func (r *mongoNoteRepository) Update(ctx context.Context, note *Note) error {
+	note.UpdatedAt = time.Now()
+	_, err := r.coll.ReplaceOne(ctx, bson.M{"id": note.ID}, note)
+	return err
+}
+
+func (r *mongoNoteRepository) Delete(ctx context.Context, id uint) error {
+	res, err := r.coll.DeleteOne(ctx, bson.M{"id": id})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
 		return ErrNoteNotFound
 	}
 	return nil
