@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/events"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/term"
 )
 
 type sshService struct {
@@ -94,7 +96,28 @@ func (c *realSSHClient) Shell(ctx context.Context, stdin io.Reader, stdout, stde
 		ssh.TTY_OP_OSPEED: 14400,
 	}
 
-	if err := session.RequestPty("xterm-256color", 80, 40, modes); err != nil {
+	fd := int(os.Stdin.Fd())
+	width := 80
+	height := 40
+
+	if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
+		fd = int(tty.Fd())
+		defer tty.Close()
+	}
+
+	if term.IsTerminal(fd) {
+		w, h, err := term.GetSize(fd)
+		if err == nil {
+			width = w
+			height = h
+		}
+		oldState, err := term.MakeRaw(fd)
+		if err == nil {
+			defer term.Restore(fd, oldState)
+		}
+	}
+
+	if err := session.RequestPty("xterm-256color", height, width, modes); err != nil {
 		return err
 	}
 

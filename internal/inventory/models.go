@@ -11,14 +11,15 @@ type Server struct {
 	Host      string     `gorm:"size:255;not null" json:"host"`
 	Port      int        `gorm:"default:22" json:"port"`
 	Username  string     `gorm:"size:255;not null" json:"username"`
-	AuthType  string     `gorm:"size:50" json:"auth_type"` // e.g. key, password
-	Provider  string     `gorm:"size:100" json:"provider"` // e.g. aws, digitalocean
-	Region    string     `gorm:"size:100" json:"region"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	LastSeen  *time.Time `json:"last_seen,omitempty"`
-	Tags      []Tag      `gorm:"many2many:server_tags;" json:"tags,omitempty"`
-	Software  []Software `json:"software,omitempty"`
+	AuthType   string     `gorm:"size:50" json:"auth_type"` // e.g. key, password
+	AuthSecret string     `gorm:"type:text" json:"auth_secret,omitempty"`
+	Provider   string     `gorm:"size:100" json:"provider"` // e.g. aws, digitalocean
+	Region     string     `gorm:"size:100" json:"region"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	LastSeen   *time.Time `json:"last_seen,omitempty"`
+	Tags       []Tag      `gorm:"many2many:server_tags;" json:"tags,omitempty"`
+	Software   []Software `json:"software,omitempty"`
 }
 
 type Tag struct {

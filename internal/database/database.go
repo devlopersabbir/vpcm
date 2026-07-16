@@ -18,7 +18,7 @@ func Init(dbPath string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	slog.Info("Connecting to SQLite database", "path", dbPath)
+	slog.Debug("Connecting to SQLite database", "path", dbPath)
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		return nil, err
