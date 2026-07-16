@@ -33,11 +33,7 @@ func NewServer(invSvc inventory.ServerService, noteSvc notes.NoteService) *Serve
 
 func (s *Server) setupRoutes() {
 	s.router.GET("/servers", s.handleListServers)
-	s.router.POST("/servers", s.handleCreateServer)
-	s.router.PATCH("/servers/:id", s.handleUpdateServer)
-	s.router.DELETE("/servers/:id", s.handleDeleteServer)
 	s.router.POST("/servers/:id/scan", s.handleScanServer)
-	s.router.POST("/servers/:id/connect", s.handleConnectServer)
 
 	s.router.GET("/notes", s.handleListNotes)
 	s.router.GET("/events", s.handleListEvents)
@@ -57,55 +53,6 @@ func (s *Server) handleListServers(c *gin.Context) {
 	c.JSON(http.StatusOK, servers)
 }
 
-func (s *Server) handleCreateServer(c *gin.Context) {
-	var req inventory.Server
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := s.inventoryService.AddServer(c.Request.Context(), &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, req)
-}
-
-func (s *Server) handleUpdateServer(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
-		return
-	}
-
-	var req inventory.Server
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	req.ID = uint(id)
-	if err := s.inventoryService.UpdateServer(c.Request.Context(), &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, req)
-}
-
-func (s *Server) handleDeleteServer(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
-		return
-	}
-
-	if err := s.inventoryService.RemoveServer(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusNoContent, nil)
-}
-
 func (s *Server) handleScanServer(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -118,11 +65,6 @@ func (s *Server) handleScanServer(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "scan initiated"})
-}
-
-func (s *Server) handleConnectServer(c *gin.Context) {
-	// Dummy connection check for skeleton
-	c.JSON(http.StatusOK, gin.H{"status": "connected"})
 }
 
 func (s *Server) handleListNotes(c *gin.Context) {
