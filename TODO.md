@@ -41,7 +41,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [x] **SSH Key Management:** Load and authenticate using private keys.
 - [x] **Auto Detect New Server:** Provider and capabilities detection on connection.
 - [x] **Auto Save Connection:** Automatically record successfully established connections to database.
-- [ ] **Rename Server:** Rename existing server profile.
+- [x] **Rename Server:** Rename existing server profile.
 - [ ] **Clone Server Profile:** Clone configurations to spawn new profiles.
 - [ ] **Duplicate Configuration:** Quick configuration cloning.
 - [ ] **Import SSH Config:** Parse and import `~/.ssh/config` files.

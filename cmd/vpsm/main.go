@@ -506,6 +506,65 @@ var serverFlushCmd = &cobra.Command{
 	},
 }
 
+var serverRenameCmd = &cobra.Command{
+	Use:   "rename [id | name] [new_name]",
+	Short: "Rename a server in inventory without changing credentials",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		input := args[0]
+		newName := strings.TrimSpace(args[1])
+		if newName == "" {
+			return fmt.Errorf("new name cannot be empty")
+		}
+
+		repo, svc, err := initRepoAndService(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		servers, err := repo.List(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		var targetID uint
+		var found bool
+
+		// Check by ID first
+		if id, err := strconv.ParseUint(input, 10, 32); err == nil {
+			for _, s := range servers {
+				if s.ID == uint(id) {
+					targetID = s.ID
+					found = true
+					break
+				}
+			}
+		}
+
+		// Check by Name
+		if !found {
+			for _, s := range servers {
+				if s.Name == input {
+					targetID = s.ID
+					found = true
+					break
+				}
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("server '%s' not found in database", input)
+		}
+
+		if err := svc.RenameServer(cmd.Context(), targetID, newName); err != nil {
+			return err
+		}
+
+		fmt.Printf("Successfully renamed server '%s' (ID: %d) to '%s'.\n", input, targetID, newName)
+		return nil
+	},
+}
+
 func promptServerName(defaultName string) string {
 	fmt.Printf("Enter a custom name for this server (default: %s): ", defaultName)
 	var name string
@@ -673,7 +732,7 @@ func init() {
 	} else {
 		configCmd.AddCommand(configShowCmd, configInitCmd)
 	}
-	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd)
+	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd)
 }
