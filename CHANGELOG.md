@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.1.1] - 2026-07-18
+
+* docs: update CHANGELOG.md with SQLite and config features for v0.1.0 (49d0171)
+* feat: conditionally register config init or edit subcommand based on file presence (4c28499)
+* feat: add SQLite support and interactive configuration subcommands (a9d134a)
+* ci: include git commit logs in CHANGELOG and GitHub Release description (8d0cb8f)
+* ci: add auto release workflow on push to main (0d7f078)
+* release: v0.1.0 (29cfd70)
+* feat: add list command to root and remove implicit ssh command injection (589dc02)
+* feat: implement multi-source cloud provider detection and integrate into server registration flow (cf18341)
+* feat: add list command as alias for server list in CLI (785a091)
+* feat: add server flush command with double confirmation to clear database inventory (01abb81)
+* feat: add interactive prompt for custom server naming and document features in new roadmap file (c05a953)
+* feat: add cross-platform SIGWINCH handling to propagate terminal resize events to remote sessions (457cacc)
+* refactor: remove server management endpoints and add official API documentation (482860e)
+* refactor: migrate database storage from GORM/SQL to MongoDB across repositories and services (9abd5fa)
+* feat: add ssh command with credential storage and interactive shell support, including server management and CLI enhancements. (4d8273e)
+* feat: initialize project structure with core services, database, and modular CLI/API architecture (3a7c2cf)
+
+
 All notable changes to this project will be documented in this file.
 
 ## [0.1.0] - 2026-07-18
