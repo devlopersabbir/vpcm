@@ -135,3 +135,12 @@ func (r *mongoServerRepository) RemoveTag(ctx context.Context, serverID uint, ta
 	_, err := r.coll.UpdateOne(ctx, bson.M{"id": serverID}, bson.M{"$pull": bson.M{"tags": bson.M{"name": tagName}}})
 	return err
 }
+
+func (r *mongoServerRepository) Flush(ctx context.Context) error {
+	_, err := r.coll.DeleteMany(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	_, _ = r.db.Collection("counters").DeleteMany(ctx, bson.M{})
+	return nil
+}

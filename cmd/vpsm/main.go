@@ -224,6 +224,47 @@ var serverRemoveCmd = &cobra.Command{
 	},
 }
 
+var serverFlushCmd = &cobra.Command{
+	Use:     "flush",
+	Aliases: []string{"flash"},
+	Short:   "Fully clean/flush the database of all servers (requires double confirmation)",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Print("Are you sure you want to flush all servers? [y/N]: ")
+		var confirmation1 string
+		_, _ = fmt.Scanln(&confirmation1)
+		confirmation1 = strings.ToLower(strings.TrimSpace(confirmation1))
+		if confirmation1 != "y" && confirmation1 != "yes" {
+			fmt.Println("Aborted.")
+			return nil
+		}
+
+		fmt.Print("This action is irreversible. Type 'FLUSH' to confirm: ")
+		var confirmation2 string
+		_, _ = fmt.Scanln(&confirmation2)
+		confirmation2 = strings.TrimSpace(confirmation2)
+		if confirmation2 != "FLUSH" {
+			fmt.Println("Aborted (confirmation text did not match 'FLUSH').")
+			return nil
+		}
+
+		cfg, _ := config.Load()
+		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		if err != nil {
+			return err
+		}
+
+		repo := inventory.NewMongoRepository(db)
+		svc := inventory.NewService(repo)
+
+		if err := svc.FlushServers(cmd.Context()); err != nil {
+			return fmt.Errorf("failed to flush database: %w", err)
+		}
+
+		fmt.Println("Successfully flushed/cleaned all servers from the database.")
+		return nil
+	},
+}
+
 func promptServerName(defaultName string) string {
 	fmt.Printf("Enter a custom name for this server (default: %s): ", defaultName)
 	var name string
@@ -379,7 +420,7 @@ var sshCmd = &cobra.Command{
 }
 
 func init() {
-	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd)
+	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd)
 }

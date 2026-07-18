@@ -85,3 +85,8 @@ func (s *serverService) ScanInventory(ctx context.Context, id uint) error {
 	})
 	return nil
 }
+
+func (s *serverService) FlushServers(ctx context.Context) error {
+	slog.Warn("Flushing all servers from database")
+	return s.repo.Flush(ctx)
+}
