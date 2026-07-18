@@ -439,32 +439,10 @@ var sshCmd = &cobra.Command{
 func init() {
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
-	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd)
+	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd)
 }
 
 func main() {
-	if len(os.Args) > 1 {
-		// Check if any argument is a known subcommand
-		hasSubcommand := false
-		knownSubcommands := []string{"completion", "config", "doctor", "help", "server", "version", "ssh", "--help", "-h"}
-		for _, arg := range os.Args[1:] {
-			for _, sc := range knownSubcommands {
-				if arg == sc {
-					hasSubcommand = true
-					break
-				}
-			}
-		}
-
-		if !hasSubcommand {
-			// Rewrite os.Args to insert "ssh" at index 1
-			newArgs := make([]string, 0, len(os.Args)+1)
-			newArgs = append(newArgs, os.Args[0], "ssh")
-			newArgs = append(newArgs, os.Args[1:]...)
-			os.Args = newArgs
-		}
-	}
-
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
