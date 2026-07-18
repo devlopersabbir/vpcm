@@ -1,6 +1,6 @@
 # VPSM (VPS Manager)
 
-A zero-dependency, CGO-free, single-binary CLI and REST API engine built in Go to seamlessly manage, document, and connect to your remote virtual private servers. 
+A zero-dependency, CGO-free, single-binary CLI and REST API engine built in Go to seamlessly manage, document, and connect to your remote virtual private servers.
 
 Designed for operations engineers and developers who want a local-first connection inventory without heavy external dependencies.
 
@@ -21,22 +21,29 @@ Most VPS managers are either bloated web interfaces or simple SSH alias files th
 ## Getting Started
 
 ### 1. Build and Install
+
 Install the binaries and configure shell wrappers automatically:
+
 ```bash
 make install
 ```
 
 ### 2. Configure Your Universe
+
 Initialize your configuration interactively:
+
 ```bash
 vpsm config init
 ```
+
 This creates/updates `~/.config/vpsm/config.yaml`. To view your active settings:
+
 ```bash
 vpsm config show
 ```
 
 ### 3. Basic Commands
+
 ```bash
 # List all registered servers
 vpcm list
@@ -59,6 +66,7 @@ vpcm server flush
 ## Architectural Principles
 
 VPSM is built around clean architecture rules for maximum lifespan:
+
 1. **Dependency Inversion:** Service domains bind to interfaces. Swapping database repositories is simple and doesn't affect connection execution flows.
 2. **Event Bus Decoupling:** Inter-module communication is asynchronous and handled through an event broker, eliminating tight package coupling.
 3. **Local-First, Scale-Second:** SQLite satisfies the immediate local requirement, while the Mongo driver serves cloud storage needs.
