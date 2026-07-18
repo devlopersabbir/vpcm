@@ -131,6 +131,12 @@ var serverListCmd = &cobra.Command{
 	},
 }
 
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all monitored servers (alias for server list)",
+	RunE:  serverListCmd.RunE,
+}
+
 var serverAddCmd = &cobra.Command{
 	Use:   "add [name] [host]",
 	Short: "Add a new server to inventory",
