@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.1.3] - 2026-07-18
+
+* Merge branch 'sabbir' (9e2f376)
+* feat: add server export subcommand supporting ssh, json, csv, and yaml formats (f68a359)
+* feat: add server rename subcommand and enforce connection details immutability (f9e4a49)
+
+
 ## [v0.1.2] - 2026-07-18
 
 * Merge branch 'sabbir' (a43bc3b)
