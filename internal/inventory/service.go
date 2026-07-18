@@ -38,6 +38,15 @@ func (s *serverService) ListServers(ctx context.Context) ([]Server, error) {
 
 func (s *serverService) UpdateServer(ctx context.Context, server *Server) error {
 	slog.Debug("Updating server", "id", server.ID)
+
+	existing, err := s.repo.GetByID(ctx, server.ID)
+	if err == nil && existing != nil {
+		// Prevent updates to critical connection/credentials settings
+		server.Host = existing.Host
+		server.Username = existing.Username
+		server.Port = existing.Port
+	}
+
 	if err := s.repo.Update(ctx, server); err != nil {
 		return err
 	}
