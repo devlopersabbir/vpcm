@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.1.2] - 2026-07-18
+
+* Merge branch 'sabbir' (a43bc3b)
+* docs: fully expand task items in TODO.md to match every roadmap detail (bca506b)
+* docs: correct Focus Share weights in TODO.md status summary (1155362)
+* docs: populate full 19-pillar platform vision in TODO.md (b2d9723)
+* docs: append remote telemetry collection items to TODO.md (50cbf7e)
+* docs: add TODO.md task board (72dcd27)
+* docs: add MIT license (c5537eb)
+* docs: add CONTRIBUTING.md guide (251e0dd)
+* docs: improve README formatting and readability with additional spacing (d77a43f)
+* docs: add premium architect-focused README.md (53c44ef)
+* ci: compile multi-platform binaries and build contributors table in release notes (4106f2f)
+
+
 ## [v0.1.1] - 2026-07-18
 
 * docs: update CHANGELOG.md with SQLite and config features for v0.1.0 (49d0171)
