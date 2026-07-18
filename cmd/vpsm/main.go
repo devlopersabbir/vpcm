@@ -330,6 +330,8 @@ func initRepoAndService(ctx context.Context) (inventory.ServerRepository, invent
 	return repo, inventory.NewService(repo), nil
 }
 
+var interactiveList bool
+
 var serverListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all monitored servers",
@@ -341,6 +343,18 @@ var serverListCmd = &cobra.Command{
 		servers, err := repo.List(cmd.Context())
 		if err != nil {
 			return err
+		}
+
+		if interactiveList {
+			selected, err := runTUI(cmd.Context(), servers)
+			if err != nil {
+				return err
+			}
+			if selected == nil {
+				fmt.Println("No server selected.")
+				return nil
+			}
+			return runSSHConnection(cmd, []string{selected.Name})
 		}
 
 		re := lipgloss.NewRenderer(os.Stdout)
@@ -829,6 +843,9 @@ func init() {
 	}
 	serverExportCmd.Flags().StringVarP(&exportFormat, "format", "f", "json", "Output format (ssh, json, csv, yaml)")
 	serverExportCmd.Flags().StringVarP(&exportOutputFile, "output", "o", "", "Output file path (default: stdout)")
+
+	serverListCmd.Flags().BoolVarP(&interactiveList, "interactive", "i", false, "Open interactive TUI server explorer")
+	listCmd.Flags().BoolVarP(&interactiveList, "interactive", "i", false, "Open interactive TUI server explorer")
 
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")

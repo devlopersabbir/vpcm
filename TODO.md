@@ -158,6 +158,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 
 #### Search & Classification
 - [x] **Tags System:** Add labels to group server types.
+- [x] **Interactive TUI Explorer:** Live search/filtering and direct SSH selection via Bubble Tea.
 - [ ] **Search Command:** Query inventory profiles (e.g. `vpsm search docker`).
 
 ---
