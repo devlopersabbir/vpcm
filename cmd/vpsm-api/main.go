@@ -20,15 +20,26 @@ func main() {
 
 	logger.Init(cfg.Logging.Level, cfg.Logging.Format, os.Stdout)
 
-	db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
-	if err != nil {
-		log.Fatalf("failed to init database: %v", err)
+	var invRepo inventory.ServerRepository
+	var noteRepo notes.NoteRepository
+
+	if cfg.Database.Driver == "sqlite" {
+		db, err := database.InitSQLite(cfg.Database.Path)
+		if err != nil {
+			log.Fatalf("failed to init SQLite database: %v", err)
+		}
+		invRepo = inventory.NewSQLiteRepository(db)
+		noteRepo = notes.NewSQLiteRepository(db)
+	} else {
+		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		if err != nil {
+			log.Fatalf("failed to init MongoDB: %v", err)
+		}
+		invRepo = inventory.NewMongoRepository(db)
+		noteRepo = notes.NewMongoRepository(db)
 	}
 
-	invRepo := inventory.NewMongoRepository(db)
 	invSvc := inventory.NewService(invRepo)
-
-	noteRepo := notes.NewMongoRepository(db)
 	noteSvc := notes.NewService(noteRepo)
 
 	server := api.NewServer(invSvc, noteSvc)

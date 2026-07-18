@@ -54,6 +54,7 @@ var CConfig Config
 func Load() (*Config, error) {
 	// Defaults
 	viper.SetDefault("database.driver", "mongodb")
+	viper.SetDefault("database.path", filepath.Join(os.Getenv("HOME"), ".local", "share", "vpsm", "vpsm.db"))
 	viper.SetDefault("database.uri", "mongodb://187.77.151.75:27017")
 	viper.SetDefault("database.name", "vpsm")
 	viper.SetDefault("api.enabled", false)
@@ -91,4 +92,28 @@ func Load() (*Config, error) {
 	}
 
 	return &CConfig, nil
+}
+
+// Save writes the given config back to ~/.config/vpsm/config.yaml
+func Save(cfg *Config) error {
+	configHome := filepath.Join(os.Getenv("HOME"), ".config", "vpsm")
+	if err := os.MkdirAll(configHome, 0755); err != nil {
+		return err
+	}
+	configPath := filepath.Join(configHome, "config.yaml")
+
+	viper.Set("database.driver", cfg.Database.Driver)
+	viper.Set("database.path", cfg.Database.Path)
+	viper.Set("database.uri", cfg.Database.URI)
+	viper.Set("database.name", cfg.Database.Name)
+	viper.Set("api.enabled", cfg.API.Enabled)
+	viper.Set("api.host", cfg.API.Host)
+	viper.Set("api.port", cfg.API.Port)
+	viper.Set("ssh.timeout", cfg.SSH.Timeout)
+	viper.Set("logging.level", cfg.Logging.Level)
+	viper.Set("logging.format", cfg.Logging.Format)
+	viper.Set("collector.workers", cfg.Collector.Workers)
+	viper.Set("plugins.enabled", cfg.Plugins.Enabled)
+
+	return viper.WriteConfigAs(configPath)
 }

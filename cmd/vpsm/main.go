@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -41,13 +42,154 @@ var versionCmd = &cobra.Command{
 
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "Show configuration status",
-	Run: func(cmd *cobra.Command, args []string) {
+	Short: "Manage and show configuration status",
+}
+
+var configShowCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show active configuration in a developer-friendly table",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, _ := config.Load()
-		fmt.Printf("Database Driver: %s\n", cfg.Database.Driver)
-		fmt.Printf("Database Path:   %s\n", cfg.Database.Path)
-		fmt.Printf("API Enabled:     %v\n", cfg.API.Enabled)
-		fmt.Printf("Logging Level:   %s\n", cfg.Logging.Level)
+
+		re := lipgloss.NewRenderer(os.Stdout)
+		cyan := lipgloss.Color("#00FFFF")
+		purple := lipgloss.Color("#7D56F4")
+		gray := lipgloss.Color("#888888")
+		white := lipgloss.Color("#FFFFFF")
+		green := lipgloss.Color("#00FF00")
+		red := lipgloss.Color("#FF0000")
+
+		var rows [][]string
+		rows = append(rows, []string{"Database Driver", cfg.Database.Driver})
+		if cfg.Database.Driver == "sqlite" {
+			rows = append(rows, []string{"SQLite DB Path", cfg.Database.Path})
+		} else {
+			rows = append(rows, []string{"MongoDB URI", cfg.Database.URI})
+			rows = append(rows, []string{"MongoDB Name", cfg.Database.Name})
+		}
+
+		apiStatus := "Disabled"
+		if cfg.API.Enabled {
+			apiStatus = "Enabled"
+		}
+		rows = append(rows, []string{"API Server Status", apiStatus})
+		rows = append(rows, []string{"API Host", cfg.API.Host})
+		rows = append(rows, []string{"API Port", strconv.Itoa(cfg.API.Port)})
+		rows = append(rows, []string{"SSH Timeout", cfg.SSH.Timeout.String()})
+		rows = append(rows, []string{"Logging Level", cfg.Logging.Level})
+		rows = append(rows, []string{"Logging Format", cfg.Logging.Format})
+
+		tbl := table.New().
+			Border(lipgloss.RoundedBorder()).
+			BorderStyle(re.NewStyle().Foreground(gray)).
+			Headers("Configuration Key", "Active Value").
+			Rows(rows...)
+
+		tbl.StyleFunc(func(row, col int) lipgloss.Style {
+			switch {
+			case row == -1:
+				return re.NewStyle().Bold(true).Foreground(cyan).Padding(0, 1)
+			default:
+				if col == 0 {
+					return re.NewStyle().Bold(true).Foreground(purple).Padding(0, 1)
+				}
+				val := rows[row][1]
+				if val == "Enabled" {
+					return re.NewStyle().Foreground(green).Padding(0, 1)
+				}
+				if val == "Disabled" {
+					return re.NewStyle().Foreground(red).Padding(0, 1)
+				}
+				return re.NewStyle().Foreground(white).Padding(0, 1)
+			}
+		})
+
+		fmt.Println("\n 🛠️  VPSM Current Configuration:")
+		fmt.Println(tbl)
+		return nil
+	},
+}
+
+var configInitCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Interactively initialize/configure your universe settings",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, _ := config.Load()
+
+		fmt.Println("🚀 Initializing VPSM Configuration...")
+
+		fmt.Print("Choose database driver [sqlite/mongodb] (default: sqlite): ")
+		var driver string
+		_, _ = fmt.Scanln(&driver)
+		driver = strings.ToLower(strings.TrimSpace(driver))
+		if driver == "" {
+			driver = "sqlite"
+		}
+		if driver != "sqlite" && driver != "mongodb" {
+			return fmt.Errorf("invalid driver choice: must be 'sqlite' or 'mongodb'")
+		}
+		cfg.Database.Driver = driver
+
+		if driver == "sqlite" {
+			defaultPath := cfg.Database.Path
+			if defaultPath == "" {
+				defaultPath = "~/.local/share/vpsm/vpsm.db"
+			}
+			fmt.Printf("Enter SQLite database path (default: %s): ", defaultPath)
+			var path string
+			_, _ = fmt.Scanln(&path)
+			path = strings.TrimSpace(path)
+			if path != "" {
+				cfg.Database.Path = path
+			} else {
+				cfg.Database.Path = defaultPath
+			}
+		} else {
+			defaultURI := cfg.Database.URI
+			if defaultURI == "" {
+				defaultURI = "mongodb://localhost:27017"
+			}
+			fmt.Printf("Enter MongoDB Connection URI (default: %s): ", defaultURI)
+			var uri string
+			_, _ = fmt.Scanln(&uri)
+			uri = strings.TrimSpace(uri)
+			if uri != "" {
+				cfg.Database.URI = uri
+			} else {
+				cfg.Database.URI = defaultURI
+			}
+
+			defaultName := cfg.Database.Name
+			if defaultName == "" {
+				defaultName = "vpsm"
+			}
+			fmt.Printf("Enter MongoDB Database Name (default: %s): ", defaultName)
+			var name string
+			_, _ = fmt.Scanln(&name)
+			name = strings.TrimSpace(name)
+			if name != "" {
+				cfg.Database.Name = name
+			} else {
+				cfg.Database.Name = defaultName
+			}
+		}
+
+		fmt.Print("Enable local REST API server? [y/N] (default: n): ")
+		var enableAPI string
+		_, _ = fmt.Scanln(&enableAPI)
+		enableAPI = strings.ToLower(strings.TrimSpace(enableAPI))
+		if enableAPI == "y" || enableAPI == "yes" {
+			cfg.API.Enabled = true
+		} else {
+			cfg.API.Enabled = false
+		}
+
+		if err := config.Save(cfg); err != nil {
+			return fmt.Errorf("failed to save configuration: %w", err)
+		}
+
+		fmt.Println("\n✨ Configuration saved successfully to ~/.config/vpsm/config.yaml!")
+		return nil
 	},
 }
 
@@ -64,9 +206,14 @@ var doctorCmd = &cobra.Command{
 		}
 		fmt.Println("[✓] Config validated")
 
-		_, err = database.InitMongo(cfg.Database.URI, cfg.Database.Name)
-		if err != nil {
-			fmt.Printf("[✗] Database connection failed: %v\n", err)
+		var dbErr error
+		if cfg.Database.Driver == "sqlite" {
+			_, dbErr = database.InitSQLite(cfg.Database.Path)
+		} else {
+			_, dbErr = database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		}
+		if dbErr != nil {
+			fmt.Printf("[✗] Database connection failed: %v\n", dbErr)
 			return
 		}
 		fmt.Println("[✓] Database connection succeeded")
@@ -79,16 +226,37 @@ var serverCmd = &cobra.Command{
 	Short: "Manage servers in inventory",
 }
 
+func initRepoAndService(ctx context.Context) (inventory.ServerRepository, inventory.ServerService, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if cfg.Database.Driver == "sqlite" {
+		db, err := database.InitSQLite(cfg.Database.Path)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to initialize SQLite: %w", err)
+		}
+		repo := inventory.NewSQLiteRepository(db)
+		return repo, inventory.NewService(repo), nil
+	}
+
+	db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to initialize MongoDB: %w", err)
+	}
+	repo := inventory.NewMongoRepository(db)
+	return repo, inventory.NewService(repo), nil
+}
+
 var serverListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all monitored servers",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, _ := config.Load()
-		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		repo, _, err := initRepoAndService(cmd.Context())
 		if err != nil {
 			return err
 		}
-		repo := inventory.NewMongoRepository(db)
 		servers, err := repo.List(cmd.Context())
 		if err != nil {
 			return err
@@ -119,7 +287,7 @@ var serverListCmd = &cobra.Command{
 
 		tbl.StyleFunc(func(row, col int) lipgloss.Style {
 			switch {
-			case row == 0:
+			case row == -1:
 				return re.NewStyle().Bold(true).Foreground(purple).Padding(0, 1)
 			default:
 				return re.NewStyle().Padding(0, 1)
@@ -145,14 +313,10 @@ var serverAddCmd = &cobra.Command{
 		name := args[0]
 		host := args[1]
 
-		cfg, _ := config.Load()
-		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		_, svc, err := initRepoAndService(cmd.Context())
 		if err != nil {
 			return err
 		}
-
-		repo := inventory.NewMongoRepository(db)
-		svc := inventory.NewService(repo)
 
 		server := &inventory.Server{
 			UUID:     "dummy-uuid-for-v0.0.1",
@@ -179,14 +343,10 @@ var serverRemoveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
 
-		cfg, _ := config.Load()
-		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		repo, svc, err := initRepoAndService(cmd.Context())
 		if err != nil {
 			return err
 		}
-
-		repo := inventory.NewMongoRepository(db)
-		svc := inventory.NewService(repo)
 
 		servers, err := repo.List(cmd.Context())
 		if err != nil {
@@ -254,14 +414,10 @@ var serverFlushCmd = &cobra.Command{
 			return nil
 		}
 
-		cfg, _ := config.Load()
-		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		_, svc, err := initRepoAndService(cmd.Context())
 		if err != nil {
 			return err
 		}
-
-		repo := inventory.NewMongoRepository(db)
-		svc := inventory.NewService(repo)
 
 		if err := svc.FlushServers(cmd.Context()); err != nil {
 			return fmt.Errorf("failed to flush database: %w", err)
@@ -286,14 +442,10 @@ func promptServerName(defaultName string) string {
 func runSSHConnection(cmd *cobra.Command, args []string) error {
 	input := args[0]
 
-	cfg, _ := config.Load()
-	db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+	repo, svc, err := initRepoAndService(cmd.Context())
 	if err != nil {
 		return err
 	}
-
-	repo := inventory.NewMongoRepository(db)
-	svc := inventory.NewService(repo)
 
 	// Get all servers to check by ID/Name/Host
 	servers, err := repo.List(cmd.Context())
@@ -361,6 +513,7 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 		target.AuthSecret = string(keyBytes)
 	}
 
+	cfg, _ := config.Load()
 	sshSvc := ssh.NewService(cfg.SSH.Timeout)
 	var client ssh.Client
 
@@ -437,6 +590,7 @@ var sshCmd = &cobra.Command{
 }
 
 func init() {
+	configCmd.AddCommand(configShowCmd, configInitCmd)
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd)
