@@ -2,9 +2,9 @@
 
 build:
 	@echo "Building binaries..."
-	@go build -o bin/vpsm cmd/vpsm/main.go
-	@go build -o bin/vpsmd cmd/vpsmd/main.go
-	@go build -o bin/vpsm-api cmd/vpsm-api/main.go
+	@go build -o bin/vpsm ./cmd/vpsm
+	@go build -o bin/vpsmd ./cmd/vpsmd
+	@go build -o bin/vpsm-api ./cmd/vpsm-api
 	@echo "Binaries compiled inside bin/"
 
 test:
