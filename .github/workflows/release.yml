@@ -55,7 +55,8 @@ jobs:
           fi
           
           # Write release notes to file
-          echo "$COMMIT_LOGS" > release_notes.md
+          echo "### Commit History" > release_notes.md
+          echo "$COMMIT_LOGS" >> release_notes.md
           
           # Update CHANGELOG.md to insert a header and commit logs for the new patch version
           DATE=$(date +%Y-%m-%d)
@@ -64,6 +65,52 @@ jobs:
           rm temp_entry.txt
           
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Fetch Contributors
+        run: |
+          # Fetch contributors using curl
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/contributors" > contributors.json
+          
+          # Append contributors header to release notes
+          echo -e "\n### Contributors\n" >> release_notes.md
+          echo -e "| Avatar | Contributor |" >> release_notes.md
+          echo -e "| :---: | :--- |" >> release_notes.md
+          
+          # Parse contributors and format into Markdown table
+          jq -r '.[] | "| <img src=\"\(.avatar_url)\" width=\"35\" height=\"35\" style=\"border-radius:50%\"> | [\(.login)](\(.html_url)) |"' contributors.json >> release_notes.md || true
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: Build Cross-Platform Binaries
+        run: |
+          mkdir -p release
+          targets=("darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64" "windows/amd64" "windows/386")
+          for target in "${targets[@]}"; do
+            IFS="/" read -r goos goarch <<< "$target"
+            ext=""
+            if [ "$goos" = "windows" ]; then
+              ext=".exe"
+            fi
+            
+            output_name="vpsm-${goos}-${goarch}"
+            echo "Building for $goos/$goarch..."
+            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name$ext" cmd/vpsm/main.go
+            
+            # Compress the binary
+            cd release
+            if [ "$goos" = "windows" ]; then
+              zip "${output_name}.zip" "$output_name$ext"
+              rm "$output_name$ext"
+            else
+              tar -czf "${output_name}.tar.gz" "$output_name"
+              rm "$output_name"
+            fi
+            cd ..
+          done
 
       - name: Commit and Push changes
         run: |
@@ -82,5 +129,8 @@ jobs:
           tag_name: ${{ steps.bump.outputs.new_version }}
           name: Release ${{ steps.bump.outputs.new_version }}
           body_path: release_notes.md
+          files: |
+            release/*.tar.gz
+            release/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
