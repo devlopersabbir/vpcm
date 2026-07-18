@@ -6,27 +6,27 @@ Welcome to the **Developer Infrastructure Platform** roadmap. VPSM is evolving f
 
 ## 🚀 Pillar Status Summary
 
-| Pillar | Status | Progress |
+| Pillar | Focus Share (Weight) | Status |
 | :--- | :---: | :---: |
-| **1. SSH Management** | In Progress | 40% |
-| **2. Infrastructure Inventory** | In Progress | 25% |
-| **3. Lightweight Monitoring** | Planned | 0% |
-| **4. Documentation & Operational Notes** | In Progress | 30% |
-| **5. DevOps Utilities** | Planned | 0% |
-| **6. Security Audits** | Planned | 0% |
-| **7. Automation & Scheduler** | Planned | 0% |
-| **8. Event Engine** | Planned | 0% |
-| **9. Cloud Provider Integrations** | In Progress | 15% |
-| **10. Terraform Sync** | Planned | 0% |
-| **11. Kubernetes Inventory** | Planned | 0% |
-| **12. Notifications (Slack/Telegram)** | Planned | 0% |
-| **13. REST API Interface** | In Progress | 40% |
-| **14. Web Dashboard** | Planned | 0% |
-| **15. Team & Org Management** | Planned | 0% |
-| **16. Plugin Architecture** | Planned | 0% |
-| **17. AI Assistant** | Future | 0% |
-| **18. Infrastructure Graph** | Future | 0% |
-| **19. Model Context Protocol (MCP) Server** | Future | 0% |
+| **1. SSH Management** | 20% | In Progress |
+| **2. Infrastructure Inventory** | 30% | In Progress |
+| **3. Lightweight Monitoring** | 20% | Planned |
+| **4. Documentation & Operational Notes** | 15% | In Progress |
+| **5. DevOps Utilities** | 15% | Planned |
+| **6. Security Audits** | Add-on | Planned |
+| **7. Automation & Scheduler** | Add-on | Planned |
+| **8. Event Engine** | Core Utility | Planned |
+| **9. Cloud Provider Integrations** | Core Utility | In Progress |
+| **10. Terraform Sync** | Integration | Planned |
+| **11. Kubernetes Inventory** | Integration | Planned |
+| **12. Notifications (Slack/Telegram)** | Integration | Planned |
+| **13. REST API Interface** | Core Utility | In Progress |
+| **14. Web Dashboard** | Interface | Planned |
+| **15. Team & Org Management** | Enterprise | Planned |
+| **16. Plugin Architecture** | Extensibility | Planned |
+| **17. AI Assistant** | Future | Planned |
+| **18. Infrastructure Graph** | Future | Planned |
+| **19. Model Context Protocol (MCP) Server** | Future | Planned |
 
 ---
 
