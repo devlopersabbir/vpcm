@@ -23,6 +23,10 @@ This task board documents completed enhancements and future tasks for the VPS Co
 - [x] **Multi-Platform Assets:** Compile and bundle CLI binaries for Windows, Linux, and macOS platforms inside the release assets.
 - [x] **Visual Contributors List:** Fetch contributor details and display avatar tables automatically inside the release notes.
 
+### Telemetry & Remote Collection
+- [x] **Silent Cloud Provider Collection:** Query and resolve remote host cloud providers (AWS, GCP, etc.) upon SSH session initialization.
+- [ ] **Background Host Telemetry Scanning:** Query and retrieve remote server specifications, OS details, and installed packages silently in the background without interfering with the user's interactive terminal experience.
+
 ### Project Setup
 - [x] Create developer documentation ([README.md](file:///Users/sabbir/own/vpcm/README.md) and [CONTRIBUTING.md](file:///Users/sabbir/own/vpcm/CONTRIBUTING.md)).
 - [x] Create project licensing ([LICENSE](file:///Users/sabbir/own/vpcm/LICENSE)).
