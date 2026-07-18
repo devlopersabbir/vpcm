@@ -98,7 +98,7 @@ jobs:
             
             output_name="vpsm-${goos}-${goarch}"
             echo "Building for $goos/$goarch..."
-            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name$ext" cmd/vpsm/main.go
+            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name$ext" ./cmd/vpsm
             
             # Compress the binary
             cd release
