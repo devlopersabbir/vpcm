@@ -9,6 +9,7 @@ This file documents all currently implemented features and future plans for the 
 - [x] **Dynamic Terminal Resizing**: Support interactive shell window resizing via SIGWINCH (unix platforms) and update SSH sessions dynamically via `WindowChange`.
 - [x] **New Server Custom Naming**: Prompt user for a human-readable name when dynamically connecting and registering a new server in the database (instead of default `user@ip`).
 - [x] **Database Flush/Flash Command**: Add `vpsm server flush` (`flash` alias) to clear all servers from the database with a double confirmation step.
+- [x] **Automatic Cloud Provider Detection**: Implement multi-step provider detection (IMDS, DMI, cloud agents, reverse DNS, and ASN lookup) to automatically set the `Provider` field in the database.
 
 ### Foundation Features (v0.0.1)
 

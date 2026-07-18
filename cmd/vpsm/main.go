@@ -160,6 +160,7 @@ var serverAddCmd = &cobra.Command{
 			Host:     host,
 			Port:     22,
 			Username: "root",
+			Provider: inventory.DetectProvider(cmd.Context(), nil, host),
 		}
 
 		if err := svc.AddServer(cmd.Context(), server); err != nil {
@@ -370,12 +371,18 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 			// Save new server or update existing credentials
 			if target.ID == 0 {
 				target.Name = promptServerName(target.Name)
+				target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
 				if err := svc.AddServer(cmd.Context(), target); err != nil {
 					return fmt.Errorf("failed to save server to database: %w", err)
 				}
-			} else if identityFile != "" {
-				if err := svc.UpdateServer(cmd.Context(), target); err != nil {
-					return fmt.Errorf("failed to update server credentials: %w", err)
+			} else {
+				if target.Provider == "" || target.Provider == "Generic VPS" {
+					target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
+				}
+				if identityFile != "" || target.Provider != "" {
+					if err := svc.UpdateServer(cmd.Context(), target); err != nil {
+						return fmt.Errorf("failed to update server: %w", err)
+					}
 				}
 			}
 		}
@@ -404,10 +411,14 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 
 		if target.ID == 0 {
 			target.Name = promptServerName(target.Name)
+			target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
 			if err := svc.AddServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to save server to database: %w", err)
 			}
 		} else {
+			if target.Provider == "" || target.Provider == "Generic VPS" {
+				target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
+			}
 			if err := svc.UpdateServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to update server credentials: %w", err)
 			}
