@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -189,6 +190,83 @@ var configInitCmd = &cobra.Command{
 		}
 
 		fmt.Println("\n✨ Configuration saved successfully to ~/.config/vpsm/config.yaml!")
+		return nil
+	},
+}
+
+func configExists() bool {
+	configHome := filepath.Join(os.Getenv("HOME"), ".config", "vpsm")
+	configPath := filepath.Join(configHome, "config.yaml")
+	_, err := os.Stat(configPath)
+	return err == nil
+}
+
+var configEditCmd = &cobra.Command{
+	Use:   "edit",
+	Short: "Interactively edit your existing universe settings",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, _ := config.Load()
+
+		fmt.Println("📝 Editing VPSM Configuration...")
+
+		fmt.Printf("Choose database driver [sqlite/mongodb] (current: %s): ", cfg.Database.Driver)
+		var driver string
+		_, _ = fmt.Scanln(&driver)
+		driver = strings.ToLower(strings.TrimSpace(driver))
+		if driver != "" {
+			if driver != "sqlite" && driver != "mongodb" {
+				return fmt.Errorf("invalid driver choice: must be 'sqlite' or 'mongodb'")
+			}
+			cfg.Database.Driver = driver
+		}
+
+		if cfg.Database.Driver == "sqlite" {
+			fmt.Printf("Enter SQLite database path (current: %s): ", cfg.Database.Path)
+			var path string
+			_, _ = fmt.Scanln(&path)
+			path = strings.TrimSpace(path)
+			if path != "" {
+				cfg.Database.Path = path
+			}
+		} else {
+			fmt.Printf("Enter MongoDB Connection URI (current: %s): ", cfg.Database.URI)
+			var uri string
+			_, _ = fmt.Scanln(&uri)
+			uri = strings.TrimSpace(uri)
+			if uri != "" {
+				cfg.Database.URI = uri
+			}
+
+			fmt.Printf("Enter MongoDB Database Name (current: %s): ", cfg.Database.Name)
+			var name string
+			_, _ = fmt.Scanln(&name)
+			name = strings.TrimSpace(name)
+			if name != "" {
+				cfg.Database.Name = name
+			}
+		}
+
+		apiStatus := "n"
+		if cfg.API.Enabled {
+			apiStatus = "y"
+		}
+		fmt.Printf("Enable local REST API server? [y/N] (current: %s): ", apiStatus)
+		var enableAPI string
+		_, _ = fmt.Scanln(&enableAPI)
+		enableAPI = strings.ToLower(strings.TrimSpace(enableAPI))
+		if enableAPI != "" {
+			if enableAPI == "y" || enableAPI == "yes" {
+				cfg.API.Enabled = true
+			} else {
+				cfg.API.Enabled = false
+			}
+		}
+
+		if err := config.Save(cfg); err != nil {
+			return fmt.Errorf("failed to save configuration: %w", err)
+		}
+
+		fmt.Println("\n✨ Configuration updated successfully!")
 		return nil
 	},
 }
@@ -590,7 +668,11 @@ var sshCmd = &cobra.Command{
 }
 
 func init() {
-	configCmd.AddCommand(configShowCmd, configInitCmd)
+	if configExists() {
+		configCmd.AddCommand(configShowCmd, configEditCmd)
+	} else {
+		configCmd.AddCommand(configShowCmd, configInitCmd)
+	}
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd)
