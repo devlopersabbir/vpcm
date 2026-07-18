@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/events"
@@ -115,6 +116,20 @@ func (c *realSSHClient) Shell(ctx context.Context, stdin io.Reader, stdout, stde
 		if err == nil {
 			defer term.Restore(fd, oldState)
 		}
+
+		sigChan := make(chan os.Signal, 1)
+		notifyWindowChange(sigChan)
+		go func() {
+			for range sigChan {
+				if w, h, err := term.GetSize(fd); err == nil {
+					_ = session.WindowChange(h, w)
+				}
+			}
+		}()
+		defer func() {
+			signal.Stop(sigChan)
+			close(sigChan)
+		}()
 	}
 
 	if err := session.RequestPty("xterm-256color", height, width, modes); err != nil {
