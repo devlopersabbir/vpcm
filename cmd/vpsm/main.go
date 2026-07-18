@@ -224,6 +224,17 @@ var serverRemoveCmd = &cobra.Command{
 	},
 }
 
+func promptServerName(defaultName string) string {
+	fmt.Printf("Enter a custom name for this server (default: %s): ", defaultName)
+	var name string
+	_, _ = fmt.Scanln(&name)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return defaultName
+	}
+	return name
+}
+
 func runSSHConnection(cmd *cobra.Command, args []string) error {
 	input := args[0]
 
@@ -311,6 +322,7 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 		if err == nil {
 			// Save new server or update existing credentials
 			if target.ID == 0 {
+				target.Name = promptServerName(target.Name)
 				if err := svc.AddServer(cmd.Context(), target); err != nil {
 					return fmt.Errorf("failed to save server to database: %w", err)
 				}
@@ -344,6 +356,7 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 		target.AuthType = "password"
 
 		if target.ID == 0 {
+			target.Name = promptServerName(target.Name)
 			if err := svc.AddServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to save server to database: %w", err)
 			}
@@ -375,7 +388,7 @@ func main() {
 	if len(os.Args) > 1 {
 		// Check if any argument is a known subcommand
 		hasSubcommand := false
-		knownSubcommands := []string{"completion", "config", "doctor", "help", "server", "version", "ssh"}
+		knownSubcommands := []string{"completion", "config", "doctor", "help", "server", "version", "ssh", "--help", "-h"}
 		for _, arg := range os.Args[1:] {
 			for _, sc := range knownSubcommands {
 				if arg == sc {
