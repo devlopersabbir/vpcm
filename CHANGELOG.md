@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.1.4] - 2026-07-19
+
+* ci: fix undefined runTUI build error in release workflow (e09da60)
+* Merge branch 'sabbir' (195e34d)
+* bump: version to v0.1.3 (da9c9a8)
+* docs: check off Interactive TUI Explorer in TODO.md (e975e8c)
+* feat: add interactive Bubble Tea TUI explorer for server list and search (69356e4)
+
+
 ## [v0.1.3] - 2026-07-18
 
 * Merge branch 'sabbir' (9e2f376)
