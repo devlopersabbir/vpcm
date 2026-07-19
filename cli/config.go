@@ -46,8 +46,15 @@ var configShowCmd = &cobra.Command{
 			apiStatus = "Enabled"
 		}
 		rows = append(rows, []string{"API Server Status", apiStatus})
+		rows = append(rows, []string{"API Mode", cfg.API.Mode})
 		rows = append(rows, []string{"API Host", cfg.API.Host})
 		rows = append(rows, []string{"API Port", strconv.Itoa(cfg.API.Port)})
+		rows = append(rows, []string{"Global SaaS URL", cfg.API.GlobalURL})
+		if cfg.API.Token != "" {
+			rows = append(rows, []string{"Global SaaS Token", "********"})
+		} else {
+			rows = append(rows, []string{"Global SaaS Token", "None"})
+		}
 		rows = append(rows, []string{"SSH Timeout", cfg.SSH.Timeout.String()})
 		rows = append(rows, []string{"Logging Level", cfg.Logging.Level})
 		rows = append(rows, []string{"Logging Format", cfg.Logging.Format})
@@ -67,7 +74,7 @@ var configShowCmd = &cobra.Command{
 					return re.NewStyle().Bold(true).Foreground(purple).Padding(0, 1)
 				}
 				val := rows[row][1]
-				if val == "Enabled" {
+				if val == "Enabled" || val == "local" || val == "cloud" {
 					return re.NewStyle().Foreground(green).Padding(0, 1)
 				}
 				if val == "Disabled" {
@@ -147,7 +154,7 @@ var configInitCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Print("Enable local REST API server? [y/N] (default: n): ")
+		fmt.Print("Enable REST API server? [y/N] (default: n): ")
 		var enableAPI string
 		_, _ = fmt.Scanln(&enableAPI)
 		enableAPI = strings.ToLower(strings.TrimSpace(enableAPI))
@@ -155,6 +162,27 @@ var configInitCmd = &cobra.Command{
 			cfg.API.Enabled = true
 		} else {
 			cfg.API.Enabled = false
+		}
+
+		if cfg.API.Enabled {
+			fmt.Printf("Choose API server mode [local/cloud] (default: local): ")
+			var mode string
+			_, _ = fmt.Scanln(&mode)
+			mode = strings.ToLower(strings.TrimSpace(mode))
+			if mode == "" {
+				mode = "local"
+			}
+			if mode != "local" && mode != "cloud" {
+				return fmt.Errorf("invalid API mode choice: must be 'local' or 'cloud'")
+			}
+			cfg.API.Mode = mode
+
+			if mode == "cloud" {
+				fmt.Print("Enter Global SaaS Authentication Token (optional): ")
+				var token string
+				_, _ = fmt.Scanln(&token)
+				cfg.API.Token = strings.TrimSpace(token)
+			}
 		}
 
 		if err := config.Save(cfg); err != nil {
@@ -222,7 +250,7 @@ var configEditCmd = &cobra.Command{
 		if cfg.API.Enabled {
 			apiStatus = "y"
 		}
-		fmt.Printf("Enable local REST API server? [y/N] (current: %s): ", apiStatus)
+		fmt.Printf("Enable REST API server? [y/N] (current: %s): ", apiStatus)
 		var enableAPI string
 		_, _ = fmt.Scanln(&enableAPI)
 		enableAPI = strings.ToLower(strings.TrimSpace(enableAPI))
@@ -234,11 +262,91 @@ var configEditCmd = &cobra.Command{
 			}
 		}
 
+		if cfg.API.Enabled {
+			fmt.Printf("Choose API server mode [local/cloud] (current: %s): ", cfg.API.Mode)
+			var mode string
+			_, _ = fmt.Scanln(&mode)
+			mode = strings.ToLower(strings.TrimSpace(mode))
+			if mode != "" {
+				if mode != "local" && mode != "cloud" {
+					return fmt.Errorf("invalid API mode choice: must be 'local' or 'cloud'")
+				}
+				cfg.API.Mode = mode
+			}
+
+			if cfg.API.Mode == "cloud" {
+				tokenPlaceholder := "None"
+				if cfg.API.Token != "" {
+					tokenPlaceholder = "********"
+				}
+				fmt.Printf("Enter Global SaaS Authentication Token (current: %s): ", tokenPlaceholder)
+				var token string
+				_, _ = fmt.Scanln(&token)
+				token = strings.TrimSpace(token)
+				if token != "" {
+					cfg.API.Token = token
+				}
+			}
+		}
+
 		if err := config.Save(cfg); err != nil {
 			return fmt.Errorf("failed to save configuration: %w", err)
 		}
 
 		fmt.Println("\n✨ Configuration updated successfully!")
+		return nil
+	},
+}
+
+var configReloadCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "Format, validate, and reload the active settings",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("🔄 Reloading VPSM Configuration...")
+
+		// Load and validate configuration
+		cfg, err := config.Load()
+		if err != nil {
+			return fmt.Errorf("failed to parse configuration file: %w", err)
+		}
+
+		// Validation Checks
+		if cfg.Database.Driver != "sqlite" && cfg.Database.Driver != "mongodb" {
+			return fmt.Errorf("validation failed: database driver must be 'sqlite' or 'mongodb'")
+		}
+		if cfg.API.Port < 1 || cfg.API.Port > 65535 {
+			return fmt.Errorf("validation failed: API port %d out of bounds (1-65535)", cfg.API.Port)
+		}
+		if cfg.API.Enabled && cfg.API.Mode != "local" && cfg.API.Mode != "cloud" {
+			return fmt.Errorf("validation failed: API mode must be 'local' or 'cloud'")
+		}
+
+		// Check directory write permissions for SQLite
+		if cfg.Database.Driver == "sqlite" {
+			dir := filepath.Dir(cfg.Database.Path)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("validation failed: sqlite database folder is not writeable: %w", err)
+			}
+		}
+
+		// Format / Save configuration (Viper cleans up layout/formatting)
+		if err := config.Save(cfg); err != nil {
+			return fmt.Errorf("failed to format and save configuration: %w", err)
+		}
+		fmt.Println("[✓] Config formatted and validated successfully.")
+
+		// Restart local API daemon if it is running in background
+		if isAPIRunning() {
+			fmt.Println("API server daemon detected in background. Restarting daemon...")
+			// Simulate calling apiRestartCmd
+			if err := apiRestartCmd.RunE(cmd, nil); err != nil {
+				return fmt.Errorf("failed to restart API daemon: %w", err)
+			}
+			fmt.Println("[✓] API server daemon reloaded successfully.")
+		} else {
+			fmt.Println("No active background API daemon found. New config will take effect on next start.")
+		}
+
 		return nil
 	},
 }
