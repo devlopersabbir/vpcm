@@ -1,0 +1,49 @@
+name: Sync Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wiki/**'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone Wiki Repo
+        run: |
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki-repo
+
+      - name: Sync Wiki Files
+        run: |
+          # Copy all files from wiki/ directory into the wiki repository
+          cp -r wiki/* wiki-repo/
+          
+          # Rename home.md to Home.md if present (GitHub wiki expects Home.md as the entrypoint)
+          if [ -f wiki-repo/home.md ]; then
+            mv wiki-repo/home.md wiki-repo/Home.md
+          fi
+
+      - name: Commit and Push Changes
+        run: |
+          cd wiki-repo
+          git add .
+          # Only commit and push if there are changes
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "docs: sync wiki from main branch [skip ci]"
+            git push origin master || git push origin main
+          else
+            echo "No changes to sync."
+          fi
