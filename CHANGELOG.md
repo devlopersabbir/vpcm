@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.1.5] - 2026-07-19
+
+* Merge branch 'dev' (8ed8d9f)
+* refactor: move version constant to cli.go and update release workflow path (28d7414)
+* feat: implement CLI configuration management and automated installation script with GitHub Wiki sync automation (e8f28b5)
+* feat: implement CLI command suite with SSH connection, data export, and project documentation (9b700bf)
+* feat: add curl-based shell installer script and update README (a9d6df9)
+
+
 ## [v0.1.4] - 2026-07-19
 
 * ci: fix undefined runTUI build error in release workflow (e09da60)
