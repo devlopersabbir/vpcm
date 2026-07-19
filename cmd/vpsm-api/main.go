@@ -28,7 +28,10 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to init SQLite database: %v", err)
 		}
-		invRepo = inventory.NewSQLiteRepository(db)
+		invRepo, err = inventory.NewSQLiteRepository(db)
+		if err != nil {
+			log.Fatalf("failed to init inventory repo: %v", err)
+		}
 		noteRepo = notes.NewSQLiteRepository(db)
 	} else {
 		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)

@@ -281,3 +281,110 @@ func DetectSpecs(ctx context.Context, client ssh.Client) (string, int, string, s
 
 	return cpuModel, cpuCores, ramTotal, diskTotal
 }
+
+// ServerInfo holds all extra metadata detected from the remote machine.
+type ServerInfo struct {
+	Hostname         string
+	PublicIP         string
+	PrivateIP        string
+	MACAddress       string
+	KernelVersion    string
+	Architecture     string
+	InitSystem       string
+	SwapTotal        string
+	Virtualization   string
+	InstanceType     string
+	SerialNumber     string
+	BIOSVersion      string
+	Uptime           string
+	Region           string
+	AvailabilityZone string
+	// OS extras
+	Timezone       string
+	Locale         string
+	PackageManager string
+}
+
+// DetectServerInfo collects detailed host metadata over an SSH connection.
+// Every command is best-effort; failures are silently ignored so that partial
+// data is still stored rather than blocking the login flow.
+func DetectServerInfo(ctx context.Context, client ssh.Client) ServerInfo {
+	run := func(cmd string) string {
+		out, err := client.RunCommand(ctx, cmd)
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(out)
+	}
+
+	var info ServerInfo
+
+	// Network Identity
+	info.Hostname = run(`hostname -f 2>/dev/null || hostname`)
+	info.PublicIP = run(`curl -sf --max-time 3 https://api.ipify.org || curl -sf --max-time 3 https://checkip.amazonaws.com || echo ""`)
+	info.PrivateIP = run(`ip route get 1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1 || hostname -I 2>/dev/null | awk '{print $1}'`)
+	info.MACAddress = run(`ip link show eth0 2>/dev/null | awk '/ether/{print $2}' || ip link 2>/dev/null | awk '/ether/{print $2}' | head -1`)
+
+	// OS Layer
+	info.KernelVersion = run(`uname -r`)
+	info.Architecture = run(`uname -m`)
+	info.InitSystem = run(`ps -p 1 -o comm= 2>/dev/null | head -1 || cat /proc/1/comm 2>/dev/null`)
+
+	// Resources
+	info.SwapTotal = run(`free -h 2>/dev/null | awk '/Swap:/ {print $2}'`)
+	info.Uptime = run(`uptime -p 2>/dev/null || uptime`)
+
+	// Virtualisation & Instance
+	info.Virtualization = run(`systemd-detect-virt 2>/dev/null || cat /sys/class/dmi/id/chassis_type 2>/dev/null || echo ""`)
+
+	// Instance type from cloud metadata (AWS / GCP / Azure)
+	instanceType := run(`curl -sf --max-time 2 -H "X-aws-ec2-metadata-token-ttl-seconds: 20" -X PUT http://169.254.169.254/latest/api/token 2>/dev/null | xargs -I{} curl -sf --max-time 2 -H "X-aws-ec2-metadata-token: {}" http://169.254.169.254/latest/meta-data/instance-type 2>/dev/null`)
+	if instanceType == "" {
+		instanceType = run(`curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/instance-type 2>/dev/null`)
+	}
+	if instanceType == "" {
+		instanceType = run(`curl -sf --max-time 2 "http://metadata.google.internal/computeMetadata/v1/instance/machine-type" -H "Metadata-Flavor: Google" 2>/dev/null | awk -F/ '{print $NF}'`)
+	}
+	if instanceType == "" {
+		instanceType = run(`curl -sf --max-time 2 "http://169.254.169.254/metadata/instance?api-version=2021-02-01" -H "Metadata: true" 2>/dev/null | grep -o '"vmSize":"[^"]*"' | cut -d'"' -f4`)
+	}
+	info.InstanceType = instanceType
+
+	// Firmware
+	info.SerialNumber = run(`cat /sys/class/dmi/id/product_serial 2>/dev/null || sudo dmidecode -s system-serial-number 2>/dev/null || echo ""`)
+	info.BIOSVersion = run(`cat /sys/class/dmi/id/bios_version 2>/dev/null || sudo dmidecode -s bios-version 2>/dev/null || echo ""`)
+
+	// Region & AZ from metadata services
+	region := run(`curl -sf --max-time 2 -H "X-aws-ec2-metadata-token-ttl-seconds: 20" -X PUT http://169.254.169.254/latest/api/token 2>/dev/null | xargs -I{} curl -sf --max-time 2 -H "X-aws-ec2-metadata-token: {}" http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null`)
+	az := run(`curl -sf --max-time 2 -H "X-aws-ec2-metadata-token-ttl-seconds: 20" -X PUT http://169.254.169.254/latest/api/token 2>/dev/null | xargs -I{} curl -sf --max-time 2 -H "X-aws-ec2-metadata-token: {}" http://169.254.169.254/latest/meta-data/placement/availability-zone 2>/dev/null`)
+
+	if region == "" {
+		region = run(`curl -sf --max-time 2 "http://metadata.google.internal/computeMetadata/v1/instance/zone" -H "Metadata-Flavor: Google" 2>/dev/null | awk -F/ '{split($NF,a,"-"); print a[1]"-"a[2]}'`)
+		az = run(`curl -sf --max-time 2 "http://metadata.google.internal/computeMetadata/v1/instance/zone" -H "Metadata-Flavor: Google" 2>/dev/null | awk -F/ '{print $NF}'`)
+	}
+	if region == "" {
+		location := run(`curl -sf --max-time 2 "http://169.254.169.254/metadata/instance?api-version=2021-02-01" -H "Metadata: true" 2>/dev/null | grep -o '"location":"[^"]*"' | cut -d'"' -f4`)
+		region = location
+	}
+	info.Region = region
+	info.AvailabilityZone = az
+
+	// OS extras
+	info.Timezone = run(`cat /etc/timezone 2>/dev/null || timedatectl show --property=Timezone --value 2>/dev/null || echo ""`)
+	info.Locale = run(`locale 2>/dev/null | awk -F= '/^LANG=/{print $2}' | head -1 || echo ""`)
+	info.PackageManager = run(`command -v apt 2>/dev/null && echo apt || command -v dnf 2>/dev/null && echo dnf || command -v yum 2>/dev/null && echo yum || command -v apk 2>/dev/null && echo apk || command -v pacman 2>/dev/null && echo pacman || echo ""`)
+
+	slog.Info("Server info detection complete",
+		"hostname", info.Hostname,
+		"public_ip", info.PublicIP,
+		"private_ip", info.PrivateIP,
+		"kernel", info.KernelVersion,
+		"arch", info.Architecture,
+		"virt", info.Virtualization,
+		"instance_type", info.InstanceType,
+		"region", info.Region,
+		"az", info.AvailabilityZone,
+	)
+
+	return info
+}

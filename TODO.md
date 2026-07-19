@@ -103,24 +103,24 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [x] **Hostname:** Retrieve the actual hostname.
 - [x] **Public IP:** Fetch the public IPv4 address.
 - [x] **Provider:** Auto-resolve VPS hosting provider (AWS, GCP, etc.).
-- [ ] **Private IP:** Scan for internal network IPs.
-- [ ] **MAC Address:** Read MAC addresses.
-- [ ] **Region:** Identify hosting region.
-- [ ] **Availability Zone:** Find specific provider datacenter zone.
-- [ ] **Virtualization:** Identify hypervisor type (KVM, Xen, Hyper-V).
-- [ ] **Instance Type:** Match instance size names (e.g. `t3.medium`).
-- [ ] **Serial Number:** Read bios/system serial numbers.
-- [ ] **BIOS:** Identify BIOS version.
-- [ ] **Uptime:** Retrieve host system uptime.
+- [x] **Private IP:** Scan for internal network IPs.
+- [x] **MAC Address:** Read MAC addresses.
+- [x] **Region:** Identify hosting region.
+- [x] **Availability Zone:** Find specific provider datacenter zone.
+- [x] **Virtualization:** Identify hypervisor type (KVM, Xen, Hyper-V).
+- [x] **Instance Type:** Match instance size names (e.g. `t3.medium`).
+- [x] **Serial Number:** Read bios/system serial numbers.
+- [x] **BIOS:** Identify BIOS version.
+- [x] **Uptime:** Retrieve host system uptime.
 
 #### Hardware specs
 
 - [x] **CPU:** Read CPU model, cores, and threads.
 - [x] **RAM:** Scan total and available memory.
 - [x] **Disk:** Audit storage partitions, types, and free space.
-- [ ] **Swap:** Check Swap partition sizes.
+- [x] **Swap:** Check Swap partition sizes.
 - [ ] **GPU:** Check for graphic accelerator units.
-- [ ] **Architecture:** Identify CPU architecture (`amd64`, `arm64`, etc.).
+- [x] **Architecture:** Identify CPU architecture (`amd64`, `arm64`, etc.).
 - [ ] **Temperature:** Read sensor temperatures.
 - [ ] **Network Speed:** Measure link speed capacity.
 
