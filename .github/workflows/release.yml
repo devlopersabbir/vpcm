@@ -28,7 +28,7 @@ jobs:
         id: bump
         run: |
           # Extract current version
-          CURRENT_VERSION=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' cmd/vpsm/main.go | head -n 1)
+          CURRENT_VERSION=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' cli/cli.go | head -n 1)
           echo "Current version: $CURRENT_VERSION"
           
           # Strip 'v' prefix
@@ -42,7 +42,7 @@ jobs:
           echo "New version: $NEW_VERSION"
           
           # Update version in file
-          sed -i "s/$CURRENT_VERSION/$NEW_VERSION/g" cmd/vpsm/main.go
+          sed -i "s/$CURRENT_VERSION/$NEW_VERSION/g" cli/cli.go
           
           # Get previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -114,7 +114,7 @@ jobs:
 
       - name: Commit and Push changes
         run: |
-          git add cmd/vpsm/main.go CHANGELOG.md
+          git add cli/cli.go CHANGELOG.md
           git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
           git push origin main
 
