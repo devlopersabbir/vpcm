@@ -35,6 +35,7 @@ func NewServer(invSvc inventory.ServerService, noteSvc notes.NoteService) *Serve
 
 func (s *Server) setupRoutes() {
 	s.router.GET("/servers", s.handleListServers)
+	s.router.GET("/servers/:id", s.handleGetServer)
 	s.router.POST("/servers/:id/scan", s.handleScanServer)
 
 	s.router.GET("/notes", s.handleListNotes)
@@ -47,12 +48,26 @@ func (s *Server) Start(host string, port int) error {
 }
 
 func (s *Server) handleListServers(c *gin.Context) {
-	servers, err := s.inventoryService.ListServers(c.Request.Context())
+	views, err := s.inventoryService.ListServers(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, servers)
+	c.JSON(http.StatusOK, views)
+}
+
+func (s *Server) handleGetServer(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+		return
+	}
+	view, err := s.inventoryService.GetServer(c.Request.Context(), uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, view)
 }
 
 func (s *Server) handleScanServer(c *gin.Context) {

@@ -31,7 +31,10 @@ func initRepoAndService(ctx context.Context) (inventory.ServerRepository, invent
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to initialize SQLite: %w", err)
 		}
-		repo := inventory.NewSQLiteRepository(db)
+		repo, err := inventory.NewSQLiteRepository(db)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to init inventory repo: %w", err)
+		}
 		return repo, inventory.NewService(repo), nil
 	}
 

@@ -41,6 +41,8 @@ func NewMongoRepository(db *mongo.Database) ServerRepository {
 	}
 }
 
+// ─── Core CRUD ────────────────────────────────────────────────────────────────
+
 func (r *mongoServerRepository) Create(ctx context.Context, server *Server) error {
 	id, err := getNextSequence(ctx, r.db, "server_id")
 	if err != nil {
@@ -112,22 +114,19 @@ func (r *mongoServerRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
+// ─── Tags ─────────────────────────────────────────────────────────────────────
+
 func (r *mongoServerRepository) AddTag(ctx context.Context, serverID uint, tagName string) error {
 	var server Server
-	err := r.coll.FindOne(ctx, bson.M{"id": serverID}).Decode(&server)
-	if err != nil {
+	if err := r.coll.FindOne(ctx, bson.M{"id": serverID}).Decode(&server); err != nil {
 		return err
 	}
-
-	// Add unique tag
 	for _, t := range server.Tags {
 		if t.Name == tagName {
 			return nil
 		}
 	}
-
-	newTag := Tag{Name: tagName}
-	_, err = r.coll.UpdateOne(ctx, bson.M{"id": serverID}, bson.M{"$push": bson.M{"tags": newTag}})
+	_, err := r.coll.UpdateOne(ctx, bson.M{"id": serverID}, bson.M{"$push": bson.M{"tags": Tag{Name: tagName}}})
 	return err
 }
 
@@ -136,15 +135,153 @@ func (r *mongoServerRepository) RemoveTag(ctx context.Context, serverID uint, ta
 	return err
 }
 
-func (r *mongoServerRepository) Flush(ctx context.Context) error {
-	_, err := r.coll.DeleteMany(ctx, bson.M{})
+// ─── Metadata Upserts (MongoDB stubs) ────────────────────────────────────────
+// Full MongoDB embedded-document implementation can replace these stubs when
+// the Mongo backend is promoted to production.
+
+func (r *mongoServerRepository) UpsertNetwork(ctx context.Context, n *ServerNetwork) error {
+	_, err := r.coll.UpdateOne(ctx,
+		bson.M{"id": n.ServerID},
+		bson.M{"$set": bson.M{"network": n}},
+		options.UpdateOne().SetUpsert(false))
+	return err
+}
+
+func (r *mongoServerRepository) UpsertHardware(ctx context.Context, h *ServerHardware) error {
+	_, err := r.coll.UpdateOne(ctx,
+		bson.M{"id": h.ServerID},
+		bson.M{"$set": bson.M{"hardware": h}},
+		options.UpdateOne().SetUpsert(false))
+	return err
+}
+
+func (r *mongoServerRepository) UpsertOS(ctx context.Context, o *ServerOS) error {
+	_, err := r.coll.UpdateOne(ctx,
+		bson.M{"id": o.ServerID},
+		bson.M{"$set": bson.M{"os": o}},
+		options.UpdateOne().SetUpsert(false))
+	return err
+}
+
+// ─── Software ─────────────────────────────────────────────────────────────────
+
+func (r *mongoServerRepository) ReplaceSoftware(ctx context.Context, serverID uint, software []Software) error {
+	_, err := r.coll.UpdateOne(ctx,
+		bson.M{"id": serverID},
+		bson.M{"$set": bson.M{"software": software}},
+		options.UpdateOne().SetUpsert(false))
+	return err
+}
+
+func (r *mongoServerRepository) GetSoftware(ctx context.Context, serverID uint) ([]Software, error) {
+	var server struct {
+		Software []Software `bson:"software"`
+	}
+	if err := r.coll.FindOne(ctx, bson.M{"id": serverID}).Decode(&server); err != nil {
+		return []Software{}, nil
+	}
+	if server.Software == nil {
+		return []Software{}, nil
+	}
+	return server.Software, nil
+}
+
+// ─── Joined Views (MongoDB) ───────────────────────────────────────────────────
+
+func (r *mongoServerRepository) GetServerView(ctx context.Context, id uint) (*ServerView, error) {
+	var doc struct {
+		Server   `bson:",inline"`
+		Network  *ServerNetwork  `bson:"network"`
+		Hardware *ServerHardware `bson:"hardware"`
+		OS       *ServerOS       `bson:"os"`
+		Software []Software      `bson:"software"`
+	}
+	if err := r.coll.FindOne(ctx, bson.M{"id": id}).Decode(&doc); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrServerNotFound
+		}
+		return nil, err
+	}
+	return mongoDocToView(doc.Server, doc.Network, doc.Hardware, doc.OS, doc.Software), nil
+}
+
+func (r *mongoServerRepository) GetServerViewByUUID(ctx context.Context, uuid string) (*ServerView, error) {
+	var doc struct {
+		Server   `bson:",inline"`
+		Network  *ServerNetwork  `bson:"network"`
+		Hardware *ServerHardware `bson:"hardware"`
+		OS       *ServerOS       `bson:"os"`
+		Software []Software      `bson:"software"`
+	}
+	if err := r.coll.FindOne(ctx, bson.M{"uuid": uuid}).Decode(&doc); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrServerNotFound
+		}
+		return nil, err
+	}
+	return mongoDocToView(doc.Server, doc.Network, doc.Hardware, doc.OS, doc.Software), nil
+}
+
+func (r *mongoServerRepository) ListServerViews(ctx context.Context) ([]ServerView, error) {
+	cursor, err := r.coll.Find(ctx, bson.M{})
 	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var docs []struct {
+		Server   `bson:",inline"`
+		Network  *ServerNetwork  `bson:"network"`
+		Hardware *ServerHardware `bson:"hardware"`
+		OS       *ServerOS       `bson:"os"`
+		Software []Software      `bson:"software"`
+	}
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
+	}
+	views := make([]ServerView, 0, len(docs))
+	for _, d := range docs {
+		views = append(views, *mongoDocToView(d.Server, d.Network, d.Hardware, d.OS, d.Software))
+	}
+	return views, nil
+}
+
+func mongoDocToView(s Server, n *ServerNetwork, h *ServerHardware, o *ServerOS, sw []Software) *ServerView {
+	if sw == nil {
+		sw = []Software{}
+	}
+	return &ServerView{
+		ID:        s.ID,
+		UUID:      s.UUID,
+		Name:      s.Name,
+		Host:      s.Host,
+		Port:      s.Port,
+		Username:  s.Username,
+		AuthType:  s.AuthType,
+		Provider:  s.Provider,
+		CreatedAt: s.CreatedAt,
+		UpdatedAt: s.UpdatedAt,
+		LastSeen:  s.LastSeen,
+		Tags:      s.Tags,
+		Network:   n,
+		Hardware:  h,
+		OS:        o,
+		Software:  sw,
+	}
+}
+
+// ─── Misc ─────────────────────────────────────────────────────────────────────
+
+func (r *mongoServerRepository) Flush(ctx context.Context) error {
+	if _, err := r.coll.DeleteMany(ctx, bson.M{}); err != nil {
 		return err
 	}
 	_, _ = r.db.Collection("connection_logs").DeleteMany(ctx, bson.M{})
 	_, _ = r.db.Collection("counters").DeleteMany(ctx, bson.M{})
 	return nil
 }
+
+// ─── Connection Logs ──────────────────────────────────────────────────────────
 
 func (r *mongoServerRepository) CreateConnectionLog(ctx context.Context, s *ConnectionLog) error {
 	id, err := getNextSequence(ctx, r.db, "connection_log_id")
