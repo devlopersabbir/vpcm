@@ -44,7 +44,7 @@ echo -e "This script will remove all installed VPSM binaries and shell wrappers.
 
 # Interactive Step 1: Confirm before removing
 echo -e "${YELLOW}${BOLD}Warning:${NORMAL} This will permanently remove VPSM (vpsm/vpcm/vpsmd/vpsm-api) from your system."
-read -p "Are you sure you want to uninstall? [y/N]: " CONFIRM
+read -p "Are you sure you want to uninstall? [y/N]: " CONFIRM < /dev/tty
 CONFIRM=${CONFIRM:-"n"}
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
     warn "Uninstall cancelled."
@@ -54,12 +54,28 @@ fi
 # Interactive Step 2: Installation directory to clean
 echo -e "\n${BOLD}Step 1: Provide the installation directory to clean${NORMAL}"
 DEFAULT_INSTALL_DIR="/usr/local/bin"
-read -p "Installation path [default: $DEFAULT_INSTALL_DIR]: " INSTALL_DIR
+read -p "Installation path [default: $DEFAULT_INSTALL_DIR]: " INSTALL_DIR < /dev/tty
 INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}
+
+# Expand tilde (~) if present
+if [[ "$INSTALL_DIR" == ~* ]]; then
+    INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
+fi
+
+# Clean up path
+if [[ "$INSTALL_DIR" != /* ]]; then
+    INSTALL_DIR="$(pwd)/$INSTALL_DIR"
+fi
+
+# Validate path format
+if [[ "$INSTALL_DIR" =~ [\$\{\}\*\?\'\"\|\<\>\&\;] ]]; then
+    error "Invalid installation path: $INSTALL_DIR contains illegal characters."
+    exit 1
+fi
 
 # Interactive Step 3: Remove shell wrappers
 echo -e "\n${BOLD}Step 2: Remove shell wrapper from shell profiles${NORMAL}"
-read -p "Remove the VPSM ssh wrapper from your shell profiles? [Y/n]: " REMOVE_WRAPPER
+read -p "Remove the VPSM ssh wrapper from your shell profiles? [Y/n]: " REMOVE_WRAPPER < /dev/tty
 REMOVE_WRAPPER=${REMOVE_WRAPPER:-"y"}
 
 echo ""
@@ -114,7 +130,7 @@ fi
 echo -e "\n${BOLD}Step 3: Clean local config and data${NORMAL}"
 CONFIG_DIR="$HOME/.config/vpsm"
 if [ -d "$CONFIG_DIR" ]; then
-    read -p "Remove config and data directory ($CONFIG_DIR)? [y/N]: " REMOVE_CONFIG
+    read -p "Remove config and data directory ($CONFIG_DIR)? [y/N]: " REMOVE_CONFIG < /dev/tty
     REMOVE_CONFIG=${REMOVE_CONFIG:-"n"}
     if [[ "$REMOVE_CONFIG" =~ ^[Yy]$ ]]; then
         rm -rf "$CONFIG_DIR"
