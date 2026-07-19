@@ -33,11 +33,29 @@ func (r *sqliteServerRepository) migrate() error {
 		auth_secret TEXT,
 		provider TEXT,
 		region TEXT,
+		os_family TEXT,
+		os_version TEXT,
+		cpu_model TEXT,
+		cpu_cores INTEGER,
+		ram_total TEXT,
+		disk_total TEXT,
 		created_at DATETIME,
 		updated_at DATETIME,
 		last_seen DATETIME,
 		tags TEXT,
 		software TEXT
+	);
+	CREATE TABLE IF NOT EXISTS connection_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id INTEGER,
+		server_name TEXT NOT NULL,
+		username TEXT NOT NULL,
+		host TEXT NOT NULL,
+		logged_in_at DATETIME NOT NULL,
+		logged_out_at DATETIME,
+		duration TEXT,
+		status TEXT NOT NULL,
+		error_message TEXT
 	);`
 	_, err := r.db.Exec(query)
 	return err
@@ -56,9 +74,9 @@ func (r *sqliteServerRepository) Create(ctx context.Context, s *Server) error {
 	}
 
 	query := `
-	INSERT INTO servers (uuid, name, host, port, username, auth_type, auth_secret, provider, region, created_at, updated_at, last_seen, tags, software)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	res, err := r.db.ExecContext(ctx, query, s.UUID, s.Name, s.Host, s.Port, s.Username, s.AuthType, s.AuthSecret, s.Provider, s.Region, s.CreatedAt, s.UpdatedAt, lastSeen, string(tagsJSON), string(softwareJSON))
+	INSERT INTO servers (uuid, name, host, port, username, auth_type, auth_secret, provider, region, os_family, os_version, cpu_model, cpu_cores, ram_total, disk_total, created_at, updated_at, last_seen, tags, software)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	res, err := r.db.ExecContext(ctx, query, s.UUID, s.Name, s.Host, s.Port, s.Username, s.AuthType, s.AuthSecret, s.Provider, s.Region, s.OSFamily, s.OSVersion, s.CPUModel, s.CPUCores, s.RAMTotal, s.DiskTotal, s.CreatedAt, s.UpdatedAt, lastSeen, string(tagsJSON), string(softwareJSON))
 	if err != nil {
 		return err
 	}
@@ -70,14 +88,14 @@ func (r *sqliteServerRepository) Create(ctx context.Context, s *Server) error {
 }
 
 func (r *sqliteServerRepository) GetByID(ctx context.Context, id uint) (*Server, error) {
-	query := `SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, region, created_at, updated_at, last_seen, tags, software FROM servers WHERE id = ?`
+	query := `SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, region, os_family, os_version, cpu_model, cpu_cores, ram_total, disk_total, created_at, updated_at, last_seen, tags, software FROM servers WHERE id = ?`
 	row := r.db.QueryRowContext(ctx, query, id)
 
 	var s Server
 	var tagsStr, softwareStr sql.NullString
 	var lastSeenTime sql.NullTime
 
-	err := row.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username, &s.AuthType, &s.AuthSecret, &s.Provider, &s.Region, &s.CreatedAt, &s.UpdatedAt, &lastSeenTime, &tagsStr, &softwareStr)
+	err := row.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username, &s.AuthType, &s.AuthSecret, &s.Provider, &s.Region, &s.OSFamily, &s.OSVersion, &s.CPUModel, &s.CPUCores, &s.RAMTotal, &s.DiskTotal, &s.CreatedAt, &s.UpdatedAt, &lastSeenTime, &tagsStr, &softwareStr)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrServerNotFound
@@ -107,14 +125,14 @@ func (r *sqliteServerRepository) GetByID(ctx context.Context, id uint) (*Server,
 }
 
 func (r *sqliteServerRepository) GetByUUID(ctx context.Context, uuid string) (*Server, error) {
-	query := `SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, region, created_at, updated_at, last_seen, tags, software FROM servers WHERE uuid = ?`
+	query := `SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, region, os_family, os_version, cpu_model, cpu_cores, ram_total, disk_total, created_at, updated_at, last_seen, tags, software FROM servers WHERE uuid = ?`
 	row := r.db.QueryRowContext(ctx, query, uuid)
 
 	var s Server
 	var tagsStr, softwareStr sql.NullString
 	var lastSeenTime sql.NullTime
 
-	err := row.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username, &s.AuthType, &s.AuthSecret, &s.Provider, &s.Region, &s.CreatedAt, &s.UpdatedAt, &lastSeenTime, &tagsStr, &softwareStr)
+	err := row.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username, &s.AuthType, &s.AuthSecret, &s.Provider, &s.Region, &s.OSFamily, &s.OSVersion, &s.CPUModel, &s.CPUCores, &s.RAMTotal, &s.DiskTotal, &s.CreatedAt, &s.UpdatedAt, &lastSeenTime, &tagsStr, &softwareStr)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrServerNotFound
@@ -144,7 +162,7 @@ func (r *sqliteServerRepository) GetByUUID(ctx context.Context, uuid string) (*S
 }
 
 func (r *sqliteServerRepository) List(ctx context.Context) ([]Server, error) {
-	query := `SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, region, created_at, updated_at, last_seen, tags, software FROM servers`
+	query := `SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, region, os_family, os_version, cpu_model, cpu_cores, ram_total, disk_total, created_at, updated_at, last_seen, tags, software FROM servers`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -157,7 +175,7 @@ func (r *sqliteServerRepository) List(ctx context.Context) ([]Server, error) {
 		var tagsStr, softwareStr sql.NullString
 		var lastSeenTime sql.NullTime
 
-		err := rows.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username, &s.AuthType, &s.AuthSecret, &s.Provider, &s.Region, &s.CreatedAt, &s.UpdatedAt, &lastSeenTime, &tagsStr, &softwareStr)
+		err := rows.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username, &s.AuthType, &s.AuthSecret, &s.Provider, &s.Region, &s.OSFamily, &s.OSVersion, &s.CPUModel, &s.CPUCores, &s.RAMTotal, &s.DiskTotal, &s.CreatedAt, &s.UpdatedAt, &lastSeenTime, &tagsStr, &softwareStr)
 		if err != nil {
 			return nil, err
 		}
@@ -206,9 +224,9 @@ func (r *sqliteServerRepository) Update(ctx context.Context, s *Server) error {
 	}
 
 	query := `
-	UPDATE servers SET uuid = ?, name = ?, host = ?, port = ?, username = ?, auth_type = ?, auth_secret = ?, provider = ?, region = ?, updated_at = ?, last_seen = ?, tags = ?, software = ?
+	UPDATE servers SET uuid = ?, name = ?, host = ?, port = ?, username = ?, auth_type = ?, auth_secret = ?, provider = ?, region = ?, os_family = ?, os_version = ?, cpu_model = ?, cpu_cores = ?, ram_total = ?, disk_total = ?, updated_at = ?, last_seen = ?, tags = ?, software = ?
 	WHERE id = ?`
-	_, err := r.db.ExecContext(ctx, query, s.UUID, s.Name, s.Host, s.Port, s.Username, s.AuthType, s.AuthSecret, s.Provider, s.Region, s.UpdatedAt, lastSeen, string(tagsJSON), string(softwareJSON), s.ID)
+	_, err := r.db.ExecContext(ctx, query, s.UUID, s.Name, s.Host, s.Port, s.Username, s.AuthType, s.AuthSecret, s.Provider, s.Region, s.OSFamily, s.OSVersion, s.CPUModel, s.CPUCores, s.RAMTotal, s.DiskTotal, s.UpdatedAt, lastSeen, string(tagsJSON), string(softwareJSON), s.ID)
 	return err
 }
 
@@ -263,5 +281,71 @@ func (r *sqliteServerRepository) Flush(ctx context.Context) error {
 		return err
 	}
 	_, _ = r.db.ExecContext(ctx, `DELETE FROM sqlite_sequence WHERE name = 'servers'`)
+	_, _ = r.db.ExecContext(ctx, `DELETE FROM connection_logs`)
 	return nil
+}
+
+func (r *sqliteServerRepository) CreateConnectionLog(ctx context.Context, s *ConnectionLog) error {
+	query := `
+	INSERT INTO connection_logs (server_id, server_name, username, host, logged_in_at, logged_out_at, duration, status, error_message)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	var loggedOut interface{}
+	if s.LoggedOutAt != nil {
+		loggedOut = *s.LoggedOutAt
+	}
+	res, err := r.db.ExecContext(ctx, query, s.ServerID, s.ServerName, s.Username, s.Host, s.LoggedInAt, loggedOut, s.Duration, s.Status, s.ErrorMessage)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err == nil {
+		s.ID = uint(id)
+	}
+	return nil
+}
+
+func (r *sqliteServerRepository) UpdateConnectionLog(ctx context.Context, s *ConnectionLog) error {
+	query := `
+	UPDATE connection_logs SET server_id = ?, server_name = ?, username = ?, host = ?, logged_in_at = ?, logged_out_at = ?, duration = ?, status = ?, error_message = ?
+	WHERE id = ?`
+	var loggedOut interface{}
+	if s.LoggedOutAt != nil {
+		loggedOut = *s.LoggedOutAt
+	}
+	_, err := r.db.ExecContext(ctx, query, s.ServerID, s.ServerName, s.Username, s.Host, s.LoggedInAt, loggedOut, s.Duration, s.Status, s.ErrorMessage, s.ID)
+	return err
+}
+
+func (r *sqliteServerRepository) GetConnectionLogs(ctx context.Context, serverID uint) ([]ConnectionLog, error) {
+	query := `SELECT id, server_id, server_name, username, host, logged_in_at, logged_out_at, duration, status, error_message FROM connection_logs WHERE server_id = ? ORDER BY logged_in_at DESC`
+	rows, err := r.db.QueryContext(ctx, query, serverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var logs []ConnectionLog
+	for rows.Next() {
+		var l ConnectionLog
+		var loggedOutTime sql.NullTime
+		var durationStr, errorMsg sql.NullString
+
+		err := rows.Scan(&l.ID, &l.ServerID, &l.ServerName, &l.Username, &l.Host, &l.LoggedInAt, &loggedOutTime, &durationStr, &l.Status, &errorMsg)
+		if err != nil {
+			return nil, err
+		}
+
+		if loggedOutTime.Valid {
+			l.LoggedOutAt = &loggedOutTime.Time
+		}
+		if durationStr.Valid {
+			l.Duration = durationStr.String
+		}
+		if errorMsg.Valid {
+			l.ErrorMessage = errorMsg.String
+		}
+
+		logs = append(logs, l)
+	}
+	return logs, nil
 }

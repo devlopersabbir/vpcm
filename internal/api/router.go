@@ -2,8 +2,10 @@ package api
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/inventory"
 	"github.com/devlopersabbir/vpcm/internal/notes"
@@ -19,7 +21,7 @@ type Server struct {
 func NewServer(invSvc inventory.ServerService, noteSvc notes.NoteService) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	r.Use(gin.Recovery())
+	r.Use(LoggerMiddleware(), gin.Recovery())
 
 	s := &Server{
 		router:           r,
@@ -91,4 +93,29 @@ func (s *Server) handleListNotes(c *gin.Context) {
 func (s *Server) handleListEvents(c *gin.Context) {
 	// Return skeleton event list
 	c.JSON(http.StatusOK, []any{})
+}
+
+func LoggerMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		c.Next()
+
+		latency := time.Since(start)
+		status := c.Writer.Status()
+		clientIP := c.ClientIP()
+		method := c.Request.Method
+
+		// Log request details
+		logMsg := fmt.Sprintf("%s %s %s?%s | Status: %d | Latency: %v | IP: %s", method, clientIP, path, query, status, latency, clientIP)
+		if status >= 500 {
+			slog.Error(logMsg)
+		} else if status >= 400 {
+			slog.Warn(logMsg)
+		} else {
+			slog.Info(logMsg)
+		}
+	}
 }

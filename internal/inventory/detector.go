@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -222,4 +223,61 @@ func detectASN(host string) string {
 	}
 
 	return ""
+}
+
+// DetectOS detects the remote machine OS family and version via SSH.
+func DetectOS(ctx context.Context, client ssh.Client) (string, string) {
+	if client == nil {
+		return "Unknown", ""
+	}
+
+	familyCmd := `cat /etc/os-release | grep -E '^ID=' | cut -d= -f2 | tr -d '"'`
+	family, err := client.RunCommand(ctx, familyCmd)
+	if err != nil {
+		family, err = client.RunCommand(ctx, "uname -s")
+		if err != nil {
+			family = "Unknown"
+		}
+	}
+	family = strings.TrimSpace(strings.ToLower(family))
+
+	versionCmd := `cat /etc/os-release | grep -E '^VERSION_ID=' | cut -d= -f2 | tr -d '"'`
+	version, err := client.RunCommand(ctx, versionCmd)
+	if err != nil {
+		version = ""
+	}
+	version = strings.TrimSpace(version)
+
+	return family, version
+}
+
+// DetectSpecs detects remote CPU model, core counts, memory size, and disk space.
+func DetectSpecs(ctx context.Context, client ssh.Client) (string, int, string, string) {
+	if client == nil {
+		return "Unknown", 0, "", ""
+	}
+
+	cpuModelCmd := `cat /proc/cpuinfo 2>/dev/null | grep -E '^model name' | head -n 1 | cut -d: -f2 | xargs || echo "Unknown"`
+	cpuModel, err := client.RunCommand(ctx, cpuModelCmd)
+	if err != nil {
+		cpuModel = "Unknown"
+	}
+	cpuModel = strings.TrimSpace(cpuModel)
+
+	cpuCoresCmd := `nproc 2>/dev/null || echo "1"`
+	cpuCoresStr, err := client.RunCommand(ctx, cpuCoresCmd)
+	cpuCores, _ := strconv.Atoi(strings.TrimSpace(cpuCoresStr))
+	if cpuCores <= 0 {
+		cpuCores = 1
+	}
+
+	ramCmd := `free -h 2>/dev/null | awk '/Mem:/ {print $2}' || echo ""`
+	ramTotal, _ := client.RunCommand(ctx, ramCmd)
+	ramTotal = strings.TrimSpace(ramTotal)
+
+	diskCmd := `df -h / 2>/dev/null | awk 'NR==2 {print $2}' || echo ""`
+	diskTotal, _ := client.RunCommand(ctx, diskCmd)
+	diskTotal = strings.TrimSpace(diskTotal)
+
+	return cpuModel, cpuCores, ramTotal, diskTotal
 }

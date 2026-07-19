@@ -46,10 +46,10 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Duplicate Configuration:** Quick configuration cloning.
 - [ ] **Import SSH Config:** Parse and import `~/.ssh/config` files.
 - [x] **Export SSH Config:** Export current database records to `~/.ssh/config` or export to ssh, json, csv, yaml formats.
-- [ ] **Auto Sync `~/.ssh/config`:** Automatically synchronize changes bidirectionally.
+- [x] **Auto Sync `~/.ssh/config`:** Automatically synchronize changes bidirectionally.
 - [ ] **Favorite Servers:** Mark and group frequently accessed servers.
 - [ ] **Recent Servers:** List recently connected hosts.
-- [ ] **Connection History:** Track connection timestamp logs.
+- [x] **Connection History:** Track connection timestamp logs.
 - [ ] **Multiple SSH Identities:** Support multi-key chains per host.
 - [ ] **Proxy & Tunneling:**
   - [ ] Jump Host / Bastion support
@@ -57,6 +57,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
   - [ ] SOCKS Proxy tunneling
   - [ ] Dynamic Port Forwarding
   - [ ] Local Port Forwarding
+  - [ ] Remote Port Forwarding
   - [ ] Remote Port Forwarding
 
 #### SSH Terminal
@@ -108,9 +109,9 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Uptime:** Retrieve host system uptime.
 
 #### Hardware specs
-- [ ] **CPU:** Read CPU model, cores, and threads.
-- [ ] **RAM:** Scan total and available memory.
-- [ ] **Disk:** Audit storage partitions, types, and free space.
+- [x] **CPU:** Read CPU model, cores, and threads.
+- [x] **RAM:** Scan total and available memory.
+- [x] **Disk:** Audit storage partitions, types, and free space.
 - [ ] **Swap:** Check Swap partition sizes.
 - [ ] **GPU:** Check for graphic accelerator units.
 - [ ] **Architecture:** Identify CPU architecture (`amd64`, `arm64`, etc.).

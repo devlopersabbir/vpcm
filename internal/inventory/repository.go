@@ -141,6 +141,40 @@ func (r *mongoServerRepository) Flush(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	_, _ = r.db.Collection("connection_logs").DeleteMany(ctx, bson.M{})
 	_, _ = r.db.Collection("counters").DeleteMany(ctx, bson.M{})
 	return nil
+}
+
+func (r *mongoServerRepository) CreateConnectionLog(ctx context.Context, s *ConnectionLog) error {
+	id, err := getNextSequence(ctx, r.db, "connection_log_id")
+	if err != nil {
+		return err
+	}
+	s.ID = id
+	_, err = r.db.Collection("connection_logs").InsertOne(ctx, s)
+	return err
+}
+
+func (r *mongoServerRepository) UpdateConnectionLog(ctx context.Context, s *ConnectionLog) error {
+	_, err := r.db.Collection("connection_logs").ReplaceOne(ctx, bson.M{"id": s.ID}, s)
+	return err
+}
+
+func (r *mongoServerRepository) GetConnectionLogs(ctx context.Context, serverID uint) ([]ConnectionLog, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "logged_in_at", Value: -1}})
+	cursor, err := r.db.Collection("connection_logs").Find(ctx, bson.M{"server_id": serverID}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var logs []ConnectionLog
+	if err := cursor.All(ctx, &logs); err != nil {
+		return nil, err
+	}
+	if logs == nil {
+		logs = []ConnectionLog{}
+	}
+	return logs, nil
 }
