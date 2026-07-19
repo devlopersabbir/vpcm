@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.1.7] - 2026-07-19
+
+* Merge branch 'sabbir' (226b84b)
+* docs: update project roadmap in TODO.md and document new API server CLI commands and response schemas (c9fa5d6)
+* feat: expand server models with hardware metadata and implement connection logging functionality (27b0140)
+* feat: implement local API server management commands and extend configuration for cloud-mode support (133a30f)
+
+
 ## [v0.1.6] - 2026-07-19
 
 * Merge branch 'main' of github.com:devlopersabbir/vpcm (74adbff)
