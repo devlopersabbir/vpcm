@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const Version = "v0.1.7"
+const Version = "v0.1.8"
 
 var identityFile string
 

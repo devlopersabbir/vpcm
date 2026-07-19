@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.1.8] - 2026-07-19
+
+* Merge branch 'dev' (3074f31)
+* Merge branch 'sabbir' into dev (5bfc470)
+* feat: add root endpoint providing API metadata, system uptime, and documentation links (ffe3e7d)
+* feat: implement server metadata collection and update repository interfaces to support extended inventory views (42e8ce7)
+* feat: add interactive installation enhancements and a new uninstaller script (53df2ee)
+
+
 ## [v0.1.7] - 2026-07-19
 
 * Merge branch 'sabbir' (226b84b)
