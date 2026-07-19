@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.1.10] - 2026-07-19
+
+* Merge branch 'dev' (f6b6c57)
+* Merge branch 'sabbir' into dev (03d5100)
+* feat: automate installation of vpsm, vpsmd, and vpsm-api binaries with non-interactive setup (5ef6f76)
+* feat: add uninstall target to Makefile for removing binaries and shell wrappers (69937b3)
+
+
 ## [v0.1.9] - 2026-07-19
 
 * Merge branch 'dev' (8d69f2c)
