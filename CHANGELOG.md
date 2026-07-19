@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.1.6] - 2026-07-19
+
+* Merge branch 'main' of github.com:devlopersabbir/vpcm (74adbff)
+* ci: add github action workflow for cross-platform build validation on dev branch (50bf50d)
+
+
 ## [v0.1.5] - 2026-07-19
 
 * Merge branch 'dev' (8ed8d9f)
