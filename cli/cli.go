@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const Version = "v0.1.4"
+
 var identityFile string
 
 var rootCmd = &cobra.Command{
@@ -28,7 +30,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version info",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("v0.1.3")
+		fmt.Println(Version)
 	},
 }
 
