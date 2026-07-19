@@ -18,12 +18,16 @@ Most VPS managers are either bloated web interfaces or simple SSH alias files th
 
 ---
 
-## Getting Started
+### 1. Installation
 
-### 1. Build and Install
+**Using Curl (Recommended):**
+Download, configure, and install the binaries automatically:
+```bash
+curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.sh | bash
+```
 
-Install the binaries and configure shell wrappers automatically:
-
+**Build From Source:**
+Alternatively, compile from source:
 ```bash
 make install
 ```
