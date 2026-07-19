@@ -98,17 +98,26 @@ jobs:
             
             output_name="vpsm-${goos}-${goarch}"
             echo "Building for $goos/$goarch..."
-            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name$ext" ./cmd/vpsm
             
-            # Compress the binary
+            # Create a temporary staging folder for this target
+            mkdir -p "release/$output_name"
+            
+            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsm$ext" ./cmd/vpsm
+            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsmd$ext" ./cmd/vpsmd
+            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsm-api$ext" ./cmd/vpsm-api
+            
+            # Compress the binaries
             cd release
             if [ "$goos" = "windows" ]; then
-              zip "${output_name}.zip" "$output_name$ext"
-              rm "$output_name$ext"
+              # For Windows, zip files inside the target folder
+              cd "$output_name"
+              zip "../${output_name}.zip" *
+              cd ..
             else
-              tar -czf "${output_name}.tar.gz" "$output_name"
-              rm "$output_name"
+              # For Unix, tar the files inside the target folder
+              tar -czf "${output_name}.tar.gz" -C "$output_name" .
             fi
+            rm -rf "$output_name"
             cd ..
           done
 

@@ -110,10 +110,8 @@ if [[ "$INSTALL_DIR" =~ [\$\{\}\*\?\'\"\|\<\>\&\;] ]]; then
     exit 1
 fi
 
-# Interactive Step 2: Configure SSH Wrapper
-echo -e "\n${BOLD}Step 2: Shell Wrapper Override Configuration${NORMAL}"
-read -p "Do you want to enable the shell wrapper to intercept ssh commands automatically? [Y/n]: " ENABLE_WRAPPER < /dev/tty
-ENABLE_WRAPPER=${ENABLE_WRAPPER:-"y"}
+# Shell Wrapper Override Configuration (Default to auto-enable)
+ENABLE_WRAPPER="y"
 
 # Temporary directory for download
 TMP_DIR=$(mktemp -d)
@@ -127,16 +125,8 @@ info "Downloading $FILENAME from GitHub..."
 curl -fsSL "$DOWNLOAD_URL" -o "$TMP_DIR/$FILENAME"
 
 # Extract
-info "Extracting binary..."
+info "Extracting binaries..."
 tar -xzf "$TMP_DIR/$FILENAME" -C "$TMP_DIR"
-
-# Locate the binary (resolves the naming mismatch e.g. vpsm-darwin-arm64)
-EXTRACTED_BIN=$(find "$TMP_DIR" -type f -name "vpsm*" | head -n 1)
-
-if [ -z "$EXTRACTED_BIN" ]; then
-    error "Failed to locate extracted binary."
-    exit 1
-fi
 
 # Ensure install dir exists
 if [ ! -d "$INSTALL_DIR" ]; then
@@ -148,20 +138,36 @@ if [ ! -d "$INSTALL_DIR" ]; then
     fi
 fi
 
-# Install
-if [ ! -w "$INSTALL_DIR" ]; then
-    warn "Requesting administrator privileges to write to $INSTALL_DIR..."
-    sudo mv "$EXTRACTED_BIN" "$INSTALL_DIR/vpsm"
-else
-    mv "$EXTRACTED_BIN" "$INSTALL_DIR/vpsm"
-fi
+# Function to move and chmod a binary
+install_binary() {
+    local BIN_NAME="$1"
+    local SRC="$TMP_DIR/$BIN_NAME"
+    local DEST="$INSTALL_DIR/$BIN_NAME"
+    
+    if [ ! -f "$SRC" ]; then
+        # Try finding if name is different or check fallback
+        SRC=$(find "$TMP_DIR" -type f -name "$BIN_NAME*" | head -n 1)
+    fi
 
-# Ensure executable permissions
-if [ ! -w "$INSTALL_DIR" ]; then
-    sudo chmod +x "$INSTALL_DIR/vpsm"
-else
-    chmod +x "$INSTALL_DIR/vpsm"
-fi
+    if [ -z "$SRC" ] || [ ! -f "$SRC" ]; then
+        error "Failed to locate binary $BIN_NAME in the release archive."
+        exit 1
+    fi
+
+    if [ ! -w "$INSTALL_DIR" ]; then
+        sudo mv "$SRC" "$DEST"
+        sudo chmod +x "$DEST"
+    else
+        mv "$SRC" "$DEST"
+        chmod +x "$DEST"
+    fi
+    success "Installed $BIN_NAME to $INSTALL_DIR"
+}
+
+# Install all three core binaries
+install_binary "vpsm"
+install_binary "vpsmd"
+install_binary "vpsm-api"
 
 # Create symlink/wrapper for vpcm if it doesn't exist
 if [ -L "$INSTALL_DIR/vpcm" ] || [ -f "$INSTALL_DIR/vpcm" ]; then
