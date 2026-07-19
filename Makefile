@@ -1,4 +1,4 @@
-.PHONY: build test lint run clean release install
+.PHONY: build test lint run clean release install uninstall
 
 build:
 	@echo "Building binaries..."
@@ -40,6 +40,35 @@ install: build
 		echo "Configured ~/.bashrc"; \
 	fi
 	@echo "Installed vpsm, vpcm, vpsmd, and vpsm-api to /usr/local/bin"
+
+uninstall:
+	@echo "Uninstalling binaries..."
+	@rm -f /usr/local/bin/vpsm
+	@rm -f /usr/local/bin/vpcm
+	@rm -f /usr/local/bin/vpsmd
+	@rm -f /usr/local/bin/vpsm-api
+	@echo "Removing shell wrappers..."
+	@if [ -f $$HOME/.zshrc ] && grep -q "VPSM ssh wrapper override" $$HOME/.zshrc; then \
+		awk ' \
+			/# VPSM ssh wrapper override/ { skip = 1; next } \
+			skip && /^}/ { skip = 0; next } \
+			skip { next } \
+			{ print } \
+		' $$HOME/.zshrc > $$HOME/.zshrc.tmp && mv $$HOME/.zshrc.tmp $$HOME/.zshrc; \
+		echo "Removed wrapper from ~/.zshrc"; \
+	fi
+	@if [ -f $$HOME/.bashrc ] && grep -q "VPSM ssh wrapper override" $$HOME/.bashrc; then \
+		awk ' \
+			/# VPSM ssh wrapper override/ { skip = 1; next } \
+			skip && /^}/ { skip = 0; next } \
+			skip { next } \
+			{ print } \
+		' $$HOME/.bashrc > $$HOME/.bashrc.tmp && mv $$HOME/.bashrc.tmp $$HOME/.bashrc; \
+		echo "Removed wrapper from ~/.bashrc"; \
+	fi
+	@echo "Cleaned build artifacts..."
+	@rm -rf bin/
+	@echo "VPSM uninstalled successfully."
 
 clean:
 	@echo "Cleaning up build artifacts..."
