@@ -1,0 +1,32 @@
+name: Dev Build Check
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: Build Cross-Platform Binaries
+        run: |
+          targets=("darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64" "windows/amd64" "windows/386")
+          for target in "${targets[@]}"; do
+            IFS="/" read -r goos goarch <<< "$target"
+            ext=""
+            if [ "$goos" = "windows" ]; then
+              ext=".exe"
+            fi
+            echo "Checking build for $goos/$goarch..."
+            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "vpsm-${goos}-${goarch}${ext}" ./cmd/vpsm
+            rm "vpsm-${goos}-${goarch}${ext}"
+          done
