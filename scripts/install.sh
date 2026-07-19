@@ -90,12 +90,29 @@ DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_RELEASE/$FILENA
 # Interactive Step 1: Install Directory
 echo -e "\n${BOLD}Step 1: Choose Installation Directory${NORMAL}"
 DEFAULT_INSTALL_DIR="/usr/local/bin"
-read -p "Install path [default: $DEFAULT_INSTALL_DIR]: " INSTALL_DIR
+read -p "Install path [default: $DEFAULT_INSTALL_DIR]: " INSTALL_DIR < /dev/tty
 INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}
+
+# Expand tilde (~) if present
+if [[ "$INSTALL_DIR" == ~* ]]; then
+    INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
+fi
+
+# Clean up path (remove trailing slashes, resolve relative path)
+if [[ "$INSTALL_DIR" != /* ]]; then
+    # Convert relative to absolute
+    INSTALL_DIR="$(pwd)/$INSTALL_DIR"
+fi
+
+# Validate path format to prevent literal code/weird strings
+if [[ "$INSTALL_DIR" =~ [\$\{\}\*\?\'\"\|\<\>\&\;] ]]; then
+    error "Invalid installation path: $INSTALL_DIR contains illegal characters."
+    exit 1
+fi
 
 # Interactive Step 2: Configure SSH Wrapper
 echo -e "\n${BOLD}Step 2: Shell Wrapper Override Configuration${NORMAL}"
-read -p "Do you want to enable the shell wrapper to intercept ssh commands automatically? [Y/n]: " ENABLE_WRAPPER
+read -p "Do you want to enable the shell wrapper to intercept ssh commands automatically? [Y/n]: " ENABLE_WRAPPER < /dev/tty
 ENABLE_WRAPPER=${ENABLE_WRAPPER:-"y"}
 
 # Temporary directory for download
