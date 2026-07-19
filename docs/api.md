@@ -2,12 +2,28 @@
 
 This document describes the REST API endpoints provided by the `vpsm-api` server.
 
-## Starting the API Server
+## Managing the API Server
 
-By default, the API server can be started on the host and port defined in your configuration (usually `127.0.0.1:8080` or via environment variables).
+You can manage the background API server daemon using the `vpsm api` command suite:
 
 ```bash
-vpsm-api
+# Start the background API server daemon
+vpsm api start
+
+# Check background daemon running status
+vpsm api status
+
+# View background server logs (support -f/--follow to tail in real-time)
+vpsm api logs [-f]
+
+# Gracefully restart the API daemon
+vpsm api restart
+
+# Stop the background API daemon
+vpsm api stop
+
+# Format, validate, and reload configs (automatically restarts running API daemons)
+vpsm config reload
 ```
 
 ---
@@ -32,11 +48,14 @@ Retrieves a list of all servers registered in the database.
     "username": "root",
     "auth_type": "password",
     "auth_secret": "deri@1234_#$",
-    "provider": "",
-    "os_family": "",
-    "os_version": "",
-    "tags": null,
-    "software": null,
+    "provider": "DigitalOcean",
+    "region": "nyc3",
+    "os_family": "ubuntu",
+    "os_version": "22.04",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz",
+    "cpu_cores": 2,
+    "ram_total": "4.0 GB",
+    "disk_total": "80 GB",
     "created_at": "2026-07-16T14:04:49.000Z",
     "updated_at": "2026-07-16T14:04:49.000Z"
   },
@@ -49,11 +68,14 @@ Retrieves a list of all servers registered in the database.
     "username": "ubuntu",
     "auth_type": "key",
     "auth_secret": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
-    "provider": "",
-    "os_family": "",
-    "os_version": "",
-    "tags": null,
-    "software": null,
+    "provider": "AWS",
+    "region": "us-east-1",
+    "os_family": "ubuntu",
+    "os_version": "20.04",
+    "cpu_model": "Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz",
+    "cpu_cores": 1,
+    "ram_total": "1.0 GB",
+    "disk_total": "8 GB",
     "created_at": "2026-07-16T14:13:30.000Z",
     "updated_at": "2026-07-16T14:13:30.000Z"
   }
@@ -105,3 +127,6 @@ Retrieves chronological execution audits and event logs recorded by the backgrou
 * **URL**: `/events`
 * **Method**: `GET`
 * **Response Status**: `200 OK`
+```json
+[]
+```

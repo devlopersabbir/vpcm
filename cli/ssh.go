@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/config"
 	"github.com/devlopersabbir/vpcm/internal/inventory"
@@ -116,6 +117,8 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 			if target.ID == 0 {
 				target.Name = promptServerName(target.Name)
 				target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
+				target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
+				target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 				if err := svc.AddServer(cmd.Context(), target); err != nil {
 					return fmt.Errorf("failed to save server to database: %w", err)
 				}
@@ -123,10 +126,10 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 				if target.Provider == "" || target.Provider == "Generic VPS" {
 					target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
 				}
-				if identityFile != "" || target.Provider != "" {
-					if err := svc.UpdateServer(cmd.Context(), target); err != nil {
-						return fmt.Errorf("failed to update server: %w", err)
-					}
+				target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
+				target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
+				if err := svc.UpdateServer(cmd.Context(), target); err != nil {
+					return fmt.Errorf("failed to update server: %w", err)
 				}
 			}
 		}
@@ -135,6 +138,17 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 	// Prompt for password if no credentials or connection failed
 	if client == nil || err != nil {
 		if identityFile != "" {
+			// Log failed attempt
+			failLog := &inventory.ConnectionLog{
+				ServerID:     target.ID,
+				ServerName:   target.Name,
+				Username:     target.Username,
+				Host:         target.Host,
+				LoggedInAt:   time.Now(),
+				Status:       "failed",
+				ErrorMessage: err.Error(),
+			}
+			_ = svc.LogConnectionEnd(cmd.Context(), failLog, err)
 			return fmt.Errorf("SSH key connection failed: %w", err)
 		}
 		fmt.Printf("Enter SSH password for %s@%s: ", target.Username, target.Host)
@@ -146,6 +160,17 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 
 		client, err = sshSvc.Connect(cmd.Context(), target.Host, target.Port, target.Username, "password", password)
 		if err != nil {
+			// Log failed attempt
+			failLog := &inventory.ConnectionLog{
+				ServerID:     target.ID,
+				ServerName:   target.Name,
+				Username:     target.Username,
+				Host:         target.Host,
+				LoggedInAt:   time.Now(),
+				Status:       "failed",
+				ErrorMessage: err.Error(),
+			}
+			_ = svc.LogConnectionEnd(cmd.Context(), failLog, err)
 			return fmt.Errorf("SSH connection failed: %w", err)
 		}
 
@@ -156,6 +181,8 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 		if target.ID == 0 {
 			target.Name = promptServerName(target.Name)
 			target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
+			target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
+			target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 			if err := svc.AddServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to save server to database: %w", err)
 			}
@@ -163,11 +190,22 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 			if target.Provider == "" || target.Provider == "Generic VPS" {
 				target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
 			}
+			target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
+			target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 			if err := svc.UpdateServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to update server credentials: %w", err)
 			}
 		}
 	}
+
+	// Log successful connection start
+	logRecord, logErr := svc.LogConnectionStart(cmd.Context(), target)
+
+	defer func() {
+		if logErr == nil && logRecord != nil {
+			_ = svc.LogConnectionEnd(cmd.Context(), logRecord, nil)
+		}
+	}()
 
 	defer client.Close()
 	return client.Shell(cmd.Context(), os.Stdin, os.Stdout, os.Stderr)

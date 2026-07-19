@@ -12,6 +12,9 @@ type ServerRepository interface {
 	AddTag(ctx context.Context, serverID uint, tagName string) error
 	RemoveTag(ctx context.Context, serverID uint, tagName string) error
 	Flush(ctx context.Context) error
+	CreateConnectionLog(ctx context.Context, log *ConnectionLog) error
+	UpdateConnectionLog(ctx context.Context, log *ConnectionLog) error
+	GetConnectionLogs(ctx context.Context, serverID uint) ([]ConnectionLog, error)
 }
 
 type ServerService interface {
@@ -23,4 +26,7 @@ type ServerService interface {
 	RenameServer(ctx context.Context, id uint, newName string) error
 	ScanInventory(ctx context.Context, id uint) error
 	FlushServers(ctx context.Context) error
+	LogConnectionStart(ctx context.Context, server *Server) (*ConnectionLog, error)
+	LogConnectionEnd(ctx context.Context, log *ConnectionLog, err error) error
+	GetConnectionHistory(ctx context.Context, serverID uint) ([]ConnectionLog, error)
 }

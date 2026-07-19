@@ -6,27 +6,27 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 
 ## 🚀 Platform Focus & Architecture Summary
 
-| Pillar | Platform Share (Weight) | Focus Area | Status |
-| :--- | :---: | :--- | :---: |
-| **1. SSH Management** | 20% | Core secure connectivity & terminal shell | In Progress |
-| **2. Infrastructure Inventory** | 30% | Deep host metadata, hardware, and runtime scans | In Progress |
-| **3. Lightweight Monitoring** | 20% | Agentless metrics, historical tracking, and health checks | Planned |
-| **4. Documentation** | 15% | Operational knowledge base, runbooks, and changelogs | In Progress |
-| **5. DevOps Utilities** | 15% | Application control, Docker, logs, backups, and deploys | Planned |
-| **6. Security Engine** | Add-on | SSH audit, firewalls, user inventory, CVE checks | Planned |
-| **7. Automation Workflows** | Add-on | Scheduler, IF/THEN rules, webhooks, and hooks | Planned |
-| **8. Event Engine** | Core Utility | Central timeline event logging & event timeline | Planned |
-| **9. Cloud Integrations** | Core Utility | Multi-cloud discovery & automatic metadata sync | In Progress |
-| **10. Terraform Integration** | Integration | Infrastructure sync & state/outputs parsing | Planned |
-| **11. Kubernetes Support** | Integration | Cluster pods, services, nodes, and Helm inventory | Planned |
-| **12. Notifications Engine** | Integration | Telegram, Slack, Discord, SMS, Webhooks | Planned |
-| **13. REST API Interface** | Interface | Complete programmatic control over platform features | In Progress |
-| **14. Web Dashboard** | Interface | Visual operations board & management console | Planned |
-| **15. Team Management** | Enterprise | Role-based access control, organizations, audit logs | Planned |
-| **16. Plugin Framework** | Extensibility | Open addon engine (AWS, Docker, Cloudflare plugins) | Planned |
-| **17. AI Assistant** | Future | Infrastructure reasoning, troubleshooting, comparisons | Planned |
-| **18. Infrastructure Graph** | Future | Visual dependency modeling (Customer -> DB) | Planned |
-| **19. MCP Server** | Future | Model Context Protocol for safe AI agent operations | Planned |
+| Pillar                          | Platform Share (Weight) | Focus Area                                                |   Status    |
+| :------------------------------ | :---------------------: | :-------------------------------------------------------- | :---------: |
+| **1. SSH Management**           |           20%           | Core secure connectivity & terminal shell                 | In Progress |
+| **2. Infrastructure Inventory** |           30%           | Deep host metadata, hardware, and runtime scans           | In Progress |
+| **3. Lightweight Monitoring**   |           20%           | Agentless metrics, historical tracking, and health checks |   Planned   |
+| **4. Documentation**            |           15%           | Operational knowledge base, runbooks, and changelogs      | In Progress |
+| **5. DevOps Utilities**         |           15%           | Application control, Docker, logs, backups, and deploys   |   Planned   |
+| **6. Security Engine**          |         Add-on          | SSH audit, firewalls, user inventory, CVE checks          |   Planned   |
+| **7. Automation Workflows**     |         Add-on          | Scheduler, IF/THEN rules, webhooks, and hooks             |   Planned   |
+| **8. Event Engine**             |      Core Utility       | Central timeline event logging & event timeline           |   Planned   |
+| **9. Cloud Integrations**       |      Core Utility       | Multi-cloud discovery & automatic metadata sync           | In Progress |
+| **10. Terraform Integration**   |       Integration       | Infrastructure sync & state/outputs parsing               |   Planned   |
+| **11. Kubernetes Support**      |       Integration       | Cluster pods, services, nodes, and Helm inventory         |   Planned   |
+| **12. Notifications Engine**    |       Integration       | Telegram, Slack, Discord, SMS, Webhooks                   |   Planned   |
+| **13. REST API Interface**      |        Interface        | Complete programmatic control over platform features      | In Progress |
+| **14. Web Dashboard**           |        Interface        | Visual operations board & management console              |   Planned   |
+| **15. Team Management**         |       Enterprise        | Role-based access control, organizations, audit logs      |   Planned   |
+| **16. Plugin Framework**        |      Extensibility      | Open addon engine (AWS, Docker, Cloudflare plugins)       |   Planned   |
+| **17. AI Assistant**            |         Future          | Infrastructure reasoning, troubleshooting, comparisons    |   Planned   |
+| **18. Infrastructure Graph**    |         Future          | Visual dependency modeling (Customer -> DB)               |   Planned   |
+| **19. MCP Server**              |         Future          | Model Context Protocol for safe AI agent operations       |   Planned   |
 
 ---
 
@@ -35,6 +35,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 ### 1. SSH Management (20% Focus Share)
 
 #### Connection Management
+
 - [x] **Add Server:** Interactively register remote hosts into the database inventory.
 - [x] **Remove Server:** Safely delete server credentials and profiles.
 - [x] **Password Authentication:** Store and connect to hosts using passwords.
@@ -46,10 +47,10 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Duplicate Configuration:** Quick configuration cloning.
 - [ ] **Import SSH Config:** Parse and import `~/.ssh/config` files.
 - [x] **Export SSH Config:** Export current database records to `~/.ssh/config` or export to ssh, json, csv, yaml formats.
-- [ ] **Auto Sync `~/.ssh/config`:** Automatically synchronize changes bidirectionally.
+- [x] **Auto Sync `~/.ssh/config`:** Automatically synchronize changes bidirectionally.
 - [ ] **Favorite Servers:** Mark and group frequently accessed servers.
 - [ ] **Recent Servers:** List recently connected hosts.
-- [ ] **Connection History:** Track connection timestamp logs.
+- [x] **Connection History:** Track connection timestamp logs.
 - [ ] **Multiple SSH Identities:** Support multi-key chains per host.
 - [ ] **Proxy & Tunneling:**
   - [ ] Jump Host / Bastion support
@@ -58,8 +59,10 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
   - [ ] Dynamic Port Forwarding
   - [ ] Local Port Forwarding
   - [ ] Remote Port Forwarding
+  - [ ] Remote Port Forwarding
 
 #### SSH Terminal
+
 - [x] **Interactive Shell:** Full interactive PTY terminal access.
 - [x] **Dynamic Terminal Resizing:** Propagate window size changes (`SIGWINCH`) to remote terminal.
 - [x] **Verify Fingerprints:** Check and save host fingerprints.
@@ -73,6 +76,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Terminal Themes:** Custom styles, colors, and fonts.
 
 #### File Transfer
+
 - [ ] **SCP Support:** Standard secure copy file transfer.
 - [ ] **SFTP Engine:** Full SFTP client.
 - [ ] **Upload:** Copy files from local host to guest.
@@ -82,6 +86,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Compression:** Compress files during transfers.
 
 #### SSH Utilities
+
 - [x] **Test Connection:** Doctor check to verify connectivity parameters.
 - [ ] **Generate SSH Key:** Create new keys on-the-fly.
 - [ ] **Rotate Keys:** Automatically replace old authorized keys with new keys.
@@ -94,6 +99,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 ### 2. Infrastructure Inventory (30% Focus Share)
 
 #### Server Information
+
 - [x] **Hostname:** Retrieve the actual hostname.
 - [x] **Public IP:** Fetch the public IPv4 address.
 - [x] **Provider:** Auto-resolve VPS hosting provider (AWS, GCP, etc.).
@@ -108,9 +114,10 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Uptime:** Retrieve host system uptime.
 
 #### Hardware specs
-- [ ] **CPU:** Read CPU model, cores, and threads.
-- [ ] **RAM:** Scan total and available memory.
-- [ ] **Disk:** Audit storage partitions, types, and free space.
+
+- [x] **CPU:** Read CPU model, cores, and threads.
+- [x] **RAM:** Scan total and available memory.
+- [x] **Disk:** Audit storage partitions, types, and free space.
 - [ ] **Swap:** Check Swap partition sizes.
 - [ ] **GPU:** Check for graphic accelerator units.
 - [ ] **Architecture:** Identify CPU architecture (`amd64`, `arm64`, etc.).
@@ -118,6 +125,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Network Speed:** Measure link speed capacity.
 
 #### Operating System
+
 - [x] **Distribution:** Detect OS name (Ubuntu, Debian, CentOS, Alpine).
 - [x] **Version:** Read OS release version.
 - [ ] **Kernel:** Read running kernel version.
@@ -127,6 +135,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Package Manager:** Determine active package managers (`apt`, `dnf`, `apk`).
 
 #### Installed Software Detection
+
 - [ ] **Detect Key Platforms:**
   - [ ] Runtimes: Node, Python, Go, Java, Rust, PHP
   - [ ] Containers: Docker, Podman, Kubernetes, k3s
@@ -136,6 +145,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
   - [ ] CI/CD: Jenkins, GitLab Runner
 
 #### Containers Inventory
+
 - [ ] **Images:** List cached images.
 - [ ] **Containers:** Audit active/stopped containers.
 - [ ] **Networks:** Audit custom networks.
@@ -143,12 +153,14 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Compose Projects:** Group running containers by Docker Compose definitions.
 
 #### Services Inventory
+
 - [ ] **Systemd Audit:** List services and filter by:
   - [ ] Enabled
   - [ ] Disabled
   - [ ] Failed
 
 #### Network Configuration
+
 - [ ] **Interfaces:** List network adapters.
 - [ ] **Routing:** Audit IP routing tables.
 - [ ] **DNS:** Read `/etc/resolv.conf` settings.
@@ -157,6 +169,7 @@ Welcome to the **Developer Infrastructure Platform** roadmap. This document serv
 - [ ] **Listening Services:** Match open ports to active processes.
 
 #### Search & Classification
+
 - [x] **Tags System:** Add labels to group server types.
 - [x] **Interactive TUI Explorer:** Live search/filtering and direct SSH selection via Bubble Tea.
 - [ ] **Search Command:** Query inventory profiles (e.g. `vpsm search docker`).

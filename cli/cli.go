@@ -36,9 +36,9 @@ var versionCmd = &cobra.Command{
 
 func init() {
 	if configExists() {
-		configCmd.AddCommand(configShowCmd, configEditCmd)
+		configCmd.AddCommand(configShowCmd, configEditCmd, configReloadCmd)
 	} else {
-		configCmd.AddCommand(configShowCmd, configInitCmd)
+		configCmd.AddCommand(configShowCmd, configInitCmd, configReloadCmd)
 	}
 	serverExportCmd.Flags().StringVarP(&exportFormat, "format", "f", "json", "Output format (ssh, json, csv, yaml)")
 	serverExportCmd.Flags().StringVarP(&exportOutputFile, "out", "o", "", "Output file path (default: stdout)")
@@ -48,7 +48,7 @@ func init() {
 
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
-	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd)
+	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd)
 }
 
 func Execute() {

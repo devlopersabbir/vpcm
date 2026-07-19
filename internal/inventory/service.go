@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/events"
 )
@@ -98,4 +99,36 @@ func (s *serverService) ScanInventory(ctx context.Context, id uint) error {
 func (s *serverService) FlushServers(ctx context.Context) error {
 	slog.Warn("Flushing all servers from database")
 	return s.repo.Flush(ctx)
+}
+
+func (s *serverService) LogConnectionStart(ctx context.Context, server *Server) (*ConnectionLog, error) {
+	log := &ConnectionLog{
+		ServerID:   server.ID,
+		ServerName: server.Name,
+		Username:   server.Username,
+		Host:       server.Host,
+		LoggedInAt: time.Now(),
+		Status:     "active",
+	}
+	if err := s.repo.CreateConnectionLog(ctx, log); err != nil {
+		return nil, err
+	}
+	return log, nil
+}
+
+func (s *serverService) LogConnectionEnd(ctx context.Context, log *ConnectionLog, err error) error {
+	now := time.Now()
+	log.LoggedOutAt = &now
+	log.Duration = now.Sub(log.LoggedInAt).Round(time.Second).String()
+	if err != nil {
+		log.Status = "failed"
+		log.ErrorMessage = err.Error()
+	} else {
+		log.Status = "success"
+	}
+	return s.repo.UpdateConnectionLog(ctx, log)
+}
+
+func (s *serverService) GetConnectionHistory(ctx context.Context, serverID uint) ([]ConnectionLog, error) {
+	return s.repo.GetConnectionLogs(ctx, serverID)
 }
