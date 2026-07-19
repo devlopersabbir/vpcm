@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -29,6 +30,63 @@ func promptServerName(defaultName string) string {
 		return defaultName
 	}
 	return name
+}
+
+// collectAndPersistMetadata runs all remote detectors and upserts results into
+// the three child tables (server_network, server_hardware, server_os).
+// It is called after every successful SSH connect.
+func collectAndPersistMetadata(ctx context.Context, svc inventory.ServerService, client ssh.Client, target *inventory.Server) {
+	// Provider (only re-detect if unknown)
+	if target.Provider == "" || target.Provider == "Generic VPS" {
+		target.Provider = inventory.DetectProvider(ctx, client, target.Host)
+		_ = svc.UpdateServer(ctx, target)
+	}
+
+	// OS info
+	osFamily, osVersion := inventory.DetectOS(ctx, client)
+
+	// Hardware
+	cpuModel, cpuCores, ramTotal, diskTotal := inventory.DetectSpecs(ctx, client)
+
+	// Full server info (network, firmware, OS extras)
+	si := inventory.DetectServerInfo(ctx, client)
+
+	// Upsert child tables
+	_ = svc.UpsertServerNetwork(ctx, &inventory.ServerNetwork{
+		ServerID:         target.ID,
+		Hostname:         si.Hostname,
+		PublicIP:         si.PublicIP,
+		PrivateIP:        si.PrivateIP,
+		MACAddress:       si.MACAddress,
+		Region:           si.Region,
+		AvailabilityZone: si.AvailabilityZone,
+	})
+
+	_ = svc.UpsertServerHardware(ctx, &inventory.ServerHardware{
+		ServerID:       target.ID,
+		CPUModel:       cpuModel,
+		CPUCores:       cpuCores,
+		RAMTotal:       ramTotal,
+		SwapTotal:      si.SwapTotal,
+		DiskTotal:      diskTotal,
+		Virtualization: si.Virtualization,
+		InstanceType:   si.InstanceType,
+		SerialNumber:   si.SerialNumber,
+		BIOSVersion:    si.BIOSVersion,
+		Uptime:         si.Uptime,
+	})
+
+	_ = svc.UpsertServerOS(ctx, &inventory.ServerOS{
+		ServerID:       target.ID,
+		OSFamily:       osFamily,
+		OSVersion:      osVersion,
+		KernelVersion:  si.KernelVersion,
+		Architecture:   si.Architecture,
+		InitSystem:     si.InitSystem,
+		Timezone:       si.Timezone,
+		Locale:         si.Locale,
+		PackageManager: si.PackageManager,
+	})
 }
 
 func runSSHConnection(cmd *cobra.Command, args []string) error {
@@ -109,36 +167,28 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 	sshSvc := ssh.NewService(cfg.SSH.Timeout)
 	var client ssh.Client
 
-	// Try saved credentials first (or loaded key)
+	// ── Try saved credentials (or loaded key) ─────────────────────────────────
 	if target.AuthSecret != "" {
 		client, err = sshSvc.Connect(cmd.Context(), target.Host, target.Port, target.Username, target.AuthType, target.AuthSecret)
 		if err == nil {
-			// Save new server or update existing credentials
 			if target.ID == 0 {
 				target.Name = promptServerName(target.Name)
 				target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
-				target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
-				target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 				if err := svc.AddServer(cmd.Context(), target); err != nil {
 					return fmt.Errorf("failed to save server to database: %w", err)
 				}
 			} else {
-				if target.Provider == "" || target.Provider == "Generic VPS" {
-					target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
-				}
-				target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
-				target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 				if err := svc.UpdateServer(cmd.Context(), target); err != nil {
 					return fmt.Errorf("failed to update server: %w", err)
 				}
 			}
+			collectAndPersistMetadata(cmd.Context(), svc, client, target)
 		}
 	}
 
-	// Prompt for password if no credentials or connection failed
+	// ── Prompt for password if no credentials or connection failed ─────────────
 	if client == nil || err != nil {
 		if identityFile != "" {
-			// Log failed attempt
 			failLog := &inventory.ConnectionLog{
 				ServerID:     target.ID,
 				ServerName:   target.Name,
@@ -160,7 +210,6 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 
 		client, err = sshSvc.Connect(cmd.Context(), target.Host, target.Port, target.Username, "password", password)
 		if err != nil {
-			// Log failed attempt
 			failLog := &inventory.ConnectionLog{
 				ServerID:     target.ID,
 				ServerName:   target.Name,
@@ -174,33 +223,25 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("SSH connection failed: %w", err)
 		}
 
-		// Save credentials on successful login
 		target.AuthSecret = password
 		target.AuthType = "password"
 
 		if target.ID == 0 {
 			target.Name = promptServerName(target.Name)
 			target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
-			target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
-			target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 			if err := svc.AddServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to save server to database: %w", err)
 			}
 		} else {
-			if target.Provider == "" || target.Provider == "Generic VPS" {
-				target.Provider = inventory.DetectProvider(cmd.Context(), client, target.Host)
-			}
-			target.OSFamily, target.OSVersion = inventory.DetectOS(cmd.Context(), client)
-			target.CPUModel, target.CPUCores, target.RAMTotal, target.DiskTotal = inventory.DetectSpecs(cmd.Context(), client)
 			if err := svc.UpdateServer(cmd.Context(), target); err != nil {
 				return fmt.Errorf("failed to update server credentials: %w", err)
 			}
 		}
+		collectAndPersistMetadata(cmd.Context(), svc, client, target)
 	}
 
-	// Log successful connection start
+	// ── Log connection ─────────────────────────────────────────────────────────
 	logRecord, logErr := svc.LogConnectionStart(cmd.Context(), target)
-
 	defer func() {
 		if logErr == nil && logRecord != nil {
 			_ = svc.LogConnectionEnd(cmd.Context(), logRecord, nil)
