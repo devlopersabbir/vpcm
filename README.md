@@ -20,10 +20,14 @@ Most VPS managers are either bloated web interfaces or simple SSH alias files th
 
 ### 1. Installation
 
-**Using Curl (Recommended):**
-Download, configure, and install the binaries automatically:
+**Linux / macOS (Bash):**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.ps1 | iex
 ```
 
 **Build From Source:**
