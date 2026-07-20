@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.1.11] - 2026-07-20
+
+* Merge branch 'dev' (f05ffa5)
+* Merge branch 'dev' of github.com:devlopersabbir/vpcm into installer (6e4f011)
+* fix: remove invalid local keyword in install.sh (300eb08)
+* Merge branch 'dev' (b03bb7d)
+* Merge branch 'sabbir' into dev (3b33a3c)
+* Merge branch 'installer' into dev (d77adba)
+* feat: improve installer with CLI arguments, robust error handling, shell wrapper support, and release workflow updates (4aa3de1)
+
+
 ## [v0.1.10] - 2026-07-19
 
 * Merge branch 'dev' (f6b6c57)
