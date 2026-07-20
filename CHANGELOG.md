@@ -2,6 +2,11 @@
 
 ## [v0.1.12] - 2026-07-20
 
+* feat: add automated Windows and Unix installation/uninstallation scripts and update documentation (690a07d)
+
+
+## [v0.1.12] - 2026-07-20
+
 * fix: use GITHUB_WORKSPACE for absolute path resolution in macOS release build steps (73e3b80)
 * refactor: overhaul frontend UI components with updated styling, border definitions, and linear gradients (9490e20)
 * build: update Wails build command to include webkit2gtk_4_1 tags for Linux workflows (d3bfd95)
