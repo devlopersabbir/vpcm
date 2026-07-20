@@ -1,5 +1,35 @@
 # Changelog
 
+## [v0.1.9] - 2026-07-19
+
+* Merge branch 'dev' (8d69f2c)
+* Merge branch 'installer' into dev (5f1f8c1)
+* feat: sanitize installation paths and force read input from tty in install and uninstall scripts (d2a417b)
+
+
+## [v0.1.8] - 2026-07-19
+
+* Merge branch 'dev' (3074f31)
+* Merge branch 'sabbir' into dev (5bfc470)
+* feat: add root endpoint providing API metadata, system uptime, and documentation links (ffe3e7d)
+* feat: implement server metadata collection and update repository interfaces to support extended inventory views (42e8ce7)
+* feat: add interactive installation enhancements and a new uninstaller script (53df2ee)
+
+
+## [v0.1.7] - 2026-07-19
+
+* Merge branch 'sabbir' (226b84b)
+* docs: update project roadmap in TODO.md and document new API server CLI commands and response schemas (c9fa5d6)
+* feat: expand server models with hardware metadata and implement connection logging functionality (27b0140)
+* feat: implement local API server management commands and extend configuration for cloud-mode support (133a30f)
+
+
+## [v0.1.6] - 2026-07-19
+
+* Merge branch 'main' of github.com:devlopersabbir/vpcm (74adbff)
+* ci: add github action workflow for cross-platform build validation on dev branch (50bf50d)
+
+
 ## [v0.1.5] - 2026-07-19
 
 * Merge branch 'dev' (8ed8d9f)
