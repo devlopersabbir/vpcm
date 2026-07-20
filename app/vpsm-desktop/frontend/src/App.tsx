@@ -4,6 +4,7 @@ import ServerList from "./components/ServerList";
 import AddServer from "./components/AddServer";
 import Settings from "./components/Settings";
 import ServerDetail from "./components/ServerDetail";
+import SessionHistory from "./components/SessionHistory";
 import {
   GetServers,
   GetServer,
@@ -16,7 +17,7 @@ import {
 } from "../wailsjs/go/main/App";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"servers" | "add-server" | "settings">("servers");
+  const [activeTab, setActiveTab] = useState<"servers" | "history" | "add-server" | "settings">("servers");
   const [servers, setServers] = useState<any[]>([]);
   const [selectedServer, setSelectedServer] = useState<any | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
@@ -174,6 +175,8 @@ export default function App() {
         )}
 
         {activeTab === "add-server" && <AddServer onAdd={handleAddServer} />}
+
+        {activeTab === "history" && <SessionHistory />}
 
         {activeTab === "settings" && (
           <Settings

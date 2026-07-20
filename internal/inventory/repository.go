@@ -300,7 +300,11 @@ func (r *mongoServerRepository) UpdateConnectionLog(ctx context.Context, s *Conn
 
 func (r *mongoServerRepository) GetConnectionLogs(ctx context.Context, serverID uint) ([]ConnectionLog, error) {
 	opts := options.Find().SetSort(bson.D{{Key: "logged_in_at", Value: -1}})
-	cursor, err := r.db.Collection("connection_logs").Find(ctx, bson.M{"server_id": serverID}, opts)
+	filter := bson.M{}
+	if serverID > 0 {
+		filter = bson.M{"server_id": serverID}
+	}
+	cursor, err := r.db.Collection("connection_logs").Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}

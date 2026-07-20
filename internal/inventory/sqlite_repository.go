@@ -446,9 +446,17 @@ func (r *sqliteServerRepository) UpdateConnectionLog(ctx context.Context, s *Con
 }
 
 func (r *sqliteServerRepository) GetConnectionLogs(ctx context.Context, serverID uint) ([]ConnectionLog, error) {
-	rows, err := r.db.QueryContext(ctx, `
-	SELECT id, server_id, server_name, username, host, logged_in_at, logged_out_at, duration, status, error_message
-	FROM connection_logs WHERE server_id = ? ORDER BY logged_in_at DESC`, serverID)
+	var rows *sql.Rows
+	var err error
+	if serverID > 0 {
+		rows, err = r.db.QueryContext(ctx, `
+		SELECT id, server_id, server_name, username, host, logged_in_at, logged_out_at, duration, status, error_message
+		FROM connection_logs WHERE server_id = ? ORDER BY logged_in_at DESC`, serverID)
+	} else {
+		rows, err = r.db.QueryContext(ctx, `
+		SELECT id, server_id, server_name, username, host, logged_in_at, logged_out_at, duration, status, error_message
+		FROM connection_logs ORDER BY logged_in_at DESC`)
+	}
 	if err != nil {
 		return nil, err
 	}
