@@ -30,7 +30,7 @@ export default function AddServer({ onAdd }: AddServerProps) {
       </h1>
       <p className="text-slate-400 text-sm mt-1">Register a remote node in your secure inventory database.</p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-slate-900/35 border border-slate-850/60 rounded-2xl p-6 backdrop-blur-md">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-slate-900/35 rounded-2xl p-6 backdrop-blur-md">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-450 mb-1.5">Server Name *</label>

@@ -17,9 +17,9 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
       </h1>
       <p className="text-slate-400 text-sm mt-1">Configure database connections and background collection settings.</p>
 
-      <form onSubmit={onSave} className="mt-8 space-y-6 bg-slate-900/35 border border-slate-850/60 rounded-xl p-6 backdrop-blur-md">
+      <form onSubmit={onSave} className="mt-8 space-y-6 bg-slate-900/35 rounded-xl p-6 backdrop-blur-md">
         {/* Database Section */}
-        <div className="border-b border-slate-850/60 pb-6">
+        <div className="pb-6">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5 mb-4">
             <Database className="h-4 w-4 text-cyan-400" />
             <span>Database Configuration</span>

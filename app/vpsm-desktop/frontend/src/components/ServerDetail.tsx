@@ -13,8 +13,8 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
   if (!selectedServer) return null;
 
   return (
-    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-30 flex justify-end">
-      <div className="w-full max-w-3xl bg-slate-900/95 border-l border-slate-850 h-full flex flex-col shadow-2xl relative">
+    <div className="absolute inset-0 bg-slate-955/80 backdrop-blur-sm z-30 flex justify-end">
+      <div className="w-full max-w-3xl bg-slate-900/95 h-full flex flex-col shadow-2xl relative">
         {/* Close Button */}
         <button
           onClick={() => setSelectedServer(null)}
@@ -24,16 +24,16 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
         </button>
 
         {/* Header */}
-        <div className="p-8 border-b border-slate-850 bg-slate-950/20">
-          <span className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-cyan-950/40 text-cyan-400 border border-cyan-800/30">
+        <div className="p-8 bg-slate-950/20">
+          <span className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-cyan-950/40 text-cyan-400">
             {selectedServer.provider || "Generic VPS"}
           </span>
           <h2 className="text-xl font-black text-white mt-2 tracking-tight">{selectedServer.name}</h2>
-          <p className="text-slate-500 font-mono text-xs mt-1">{selectedServer.username}@{selectedServer.host}:{selectedServer.port}</p>
+          <p className="text-slate-550 font-mono text-xs mt-1">{selectedServer.username}@{selectedServer.host}:{selectedServer.port}</p>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex border-b border-slate-850 bg-slate-950/10 px-4 overflow-x-auto">
+        <div className="flex bg-slate-950/10 px-4 overflow-x-auto">
           {[
             { id: "overview", label: "Overview", icon: Info },
             { id: "hardware", label: "Hardware", icon: Cpu },
@@ -47,10 +47,10 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
               <button
                 key={t.id}
                 onClick={() => setDetailTab(t.id as any)}
-                className={`flex items-center space-x-1.5 px-4 py-3.5 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all duration-300 ${
+                className={`flex items-center space-x-1.5 px-4 py-3.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${
                   detailTab === t.id
-                    ? "border-cyan-400 text-cyan-400 bg-cyan-500/[0.02]"
-                    : "border-transparent text-slate-450 hover:text-slate-200"
+                    ? "text-cyan-400 bg-cyan-500/[0.02]"
+                    : "text-slate-450 hover:text-slate-200"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -65,7 +65,7 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
           {/* OVERVIEW */}
           {detailTab === "overview" && (
             <div className="space-y-6">
-              <div className="bg-slate-950/50 border border-slate-850 rounded-2xl p-5">
+              <div className="bg-slate-950/50 rounded-2xl p-5">
                 <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-4 flex items-center space-x-1.5">
                   <TagIcon className="h-3.5 w-3.5 text-cyan-400" />
                   <span>VPS Identity Details</span>
@@ -93,19 +93,19 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-5">
+                <div className="bg-slate-950/40 rounded-2xl p-5">
                   <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500">Distribution</span>
                   <p className="text-md font-extrabold text-slate-200 mt-2">
                     {selectedServer.os?.os_family || "Unknown"} {selectedServer.os?.os_version || ""}
                   </p>
                 </div>
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-5">
+                <div className="bg-slate-950/40 rounded-2xl p-5">
                   <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500">Resources</span>
                   <p className="text-md font-extrabold text-slate-200 mt-2">
                     {selectedServer.hardware?.ram_total || "—"} / {selectedServer.hardware?.disk_total || "—"}
                   </p>
                 </div>
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-5">
+                <div className="bg-slate-950/40 rounded-2xl p-5">
                   <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500">IP address</span>
                   <p className="text-md font-extrabold text-cyan-400 mt-2 font-mono truncate" title={selectedServer.network?.public_ip}>
                     {selectedServer.network?.public_ip || selectedServer.host}
@@ -117,7 +117,7 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
 
           {/* HARDWARE */}
           {detailTab === "hardware" && (
-            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 space-y-4">
+            <div className="bg-slate-950/40 rounded-2xl p-6 space-y-4">
               {!selectedServer.hardware ? (
                 <div className="text-center py-8 text-slate-500">No hardware specification audited yet.</div>
               ) : (
@@ -132,8 +132,8 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
                     { label: "Uptime", val: selectedServer.hardware.uptime, highlight: true },
                     { label: "Instance Type", val: selectedServer.hardware.instance_type }
                   ].map((x, i) => (
-                    <div key={i} className="pb-3.5 border-b border-slate-850/50">
-                      <span className="text-slate-500 block font-bold uppercase tracking-wider text-[9px]">{x.label}</span>
+                    <div key={i} className="pb-3.5">
+                      <span className="text-slate-550 block font-bold uppercase tracking-wider text-[9px]">{x.label}</span>
                       <span className={`font-semibold ${x.highlight ? "text-cyan-400" : "text-slate-200"}`}>{x.val || "—"}</span>
                     </div>
                   ))}
@@ -144,7 +144,7 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
 
           {/* OS */}
           {detailTab === "os" && (
-            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 space-y-4">
+            <div className="bg-slate-950/40 rounded-2xl p-6 space-y-4">
               {!selectedServer.os ? (
                 <div className="text-center py-8 text-slate-500">No OS specification audited yet.</div>
               ) : (
@@ -157,8 +157,8 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
                     { label: "Timezone", val: selectedServer.os.timezone },
                     { label: "Package Manager", val: selectedServer.os.package_manager, mono: true }
                   ].map((x, i) => (
-                    <div key={i} className="pb-3.5 border-b border-slate-850/50">
-                      <span className="text-slate-500 block font-bold uppercase tracking-wider text-[9px]">{x.label}</span>
+                    <div key={i} className="pb-3.5">
+                      <span className="text-slate-550 block font-bold uppercase tracking-wider text-[9px]">{x.label}</span>
                       <span className={`font-semibold ${x.mono ? "font-mono" : ""} text-slate-200`}>{x.val || "—"}</span>
                     </div>
                   ))}
@@ -169,7 +169,7 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
 
           {/* NETWORK */}
           {detailTab === "network" && (
-            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 space-y-4">
+            <div className="bg-slate-950/40 rounded-2xl p-6 space-y-4">
               {!selectedServer.network ? (
                 <div className="text-center py-8 text-slate-500">No network configuration audited yet.</div>
               ) : (
@@ -182,8 +182,8 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
                     { label: "Cloud Region", val: selectedServer.network.region },
                     { label: "Availability Zone", val: selectedServer.network.availability_zone }
                   ].map((x, i) => (
-                    <div key={i} className="pb-3.5 border-b border-slate-850/50">
-                      <span className="text-slate-500 block font-bold uppercase tracking-wider text-[9px]">{x.label}</span>
+                    <div key={i} className="pb-3.5">
+                      <span className="text-slate-550 block font-bold uppercase tracking-wider text-[9px]">{x.label}</span>
                       <span className={`font-semibold ${x.mono ? "font-mono text-cyan-400" : ""} text-slate-200`}>{x.val || "—"}</span>
                     </div>
                   ))}
@@ -196,23 +196,23 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
           {detailTab === "software" && (
             <div className="space-y-4">
               {!selectedServer.software || selectedServer.software.length === 0 ? (
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 text-center text-slate-500">
+                <div className="bg-slate-950/40 rounded-2xl p-6 text-center text-slate-500">
                   No installed software packages scanned.
                 </div>
               ) : (
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl overflow-hidden">
+                <div className="bg-slate-950/40 rounded-2xl overflow-hidden">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-950/60 text-slate-450 border-b border-slate-850">
+                      <tr className="bg-slate-950/60 text-slate-450">
                         <th className="px-4 py-3 font-extrabold uppercase tracking-wider text-[9px]">Package Name</th>
                         <th className="px-4 py-3 font-extrabold uppercase tracking-wider text-[9px]">Installed Version</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-850/40">
+                    <tbody>
                       {selectedServer.software.map((pkg: any) => (
                         <tr key={pkg.id} className="hover:bg-slate-900/30 transition-colors">
                           <td className="px-4 py-3 font-bold text-slate-350">{pkg.name}</td>
-                          <td className="px-4 py-3 font-mono text-slate-450">{pkg.version}</td>
+                          <td className="px-4 py-3 font-mono text-slate-455">{pkg.version}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -226,21 +226,21 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
           {detailTab === "logs" && (
             <div className="space-y-4">
               {logs.length === 0 ? (
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 text-center text-slate-500">
+                <div className="bg-slate-950/40 rounded-2xl p-6 text-center text-slate-500">
                   No connection sessions found for this server.
                 </div>
               ) : (
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl overflow-hidden">
+                <div className="bg-slate-950/40 rounded-2xl overflow-hidden">
                   <table className="w-full text-left border-collapse text-[11px]">
                     <thead>
-                      <tr className="bg-slate-950/60 text-slate-450 border-b border-slate-850">
+                      <tr className="bg-slate-950/60 text-slate-455">
                         <th className="px-4 py-3 font-extrabold uppercase text-[9px]">SSH User</th>
                         <th className="px-4 py-3 font-extrabold uppercase text-[9px]">Login Time</th>
                         <th className="px-4 py-3 font-extrabold uppercase text-[9px]">Duration</th>
                         <th className="px-4 py-3 font-extrabold uppercase text-[9px]">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-850/40">
+                    <tbody>
                       {logs.map((log: any) => (
                         <tr key={log.id} className="hover:bg-slate-900/30 transition-colors">
                           <td className="px-4 py-3 font-bold text-slate-300 font-mono">{log.username}</td>
@@ -250,8 +250,8 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
                             <span
                               className={`inline-flex px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wide ${
                                 log.status === "success"
-                                  ? "bg-emerald-950/60 border border-emerald-900/40 text-emerald-400"
-                                  : "bg-rose-950/60 border border-rose-900/40 text-rose-400"
+                                  ? "bg-emerald-950/60 text-emerald-400"
+                                  : "bg-rose-950/60 text-rose-400"
                               }`}
                             >
                               {log.status}

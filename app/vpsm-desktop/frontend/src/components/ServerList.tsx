@@ -46,18 +46,18 @@ export default function ServerList({
 
   const getProviderColor = (provider: string) => {
     const p = (provider || "").toLowerCase();
-    if (p.includes("aws")) return "from-amber-500/10 to-orange-500/5 text-orange-400 border-orange-500/25";
-    if (p.includes("digitalocean") || p.includes("do")) return "from-blue-500/10 to-indigo-500/5 text-blue-400 border-blue-500/25";
-    if (p.includes("gcp") || p.includes("google")) return "from-emerald-500/10 to-teal-500/5 text-emerald-400 border-emerald-500/25";
-    if (p.includes("vultr")) return "from-sky-500/10 to-blue-500/5 text-sky-400 border-sky-500/25";
-    if (p.includes("linode") || p.includes("akamai")) return "from-green-500/10 to-emerald-500/5 text-green-400 border-green-500/25";
-    return "from-slate-500/10 to-slate-600/5 text-slate-400 border-slate-700/50";
+    if (p.includes("aws")) return "from-amber-500/10 to-orange-500/5 text-orange-400";
+    if (p.includes("digitalocean") || p.includes("do")) return "from-blue-500/10 to-indigo-500/5 text-blue-400";
+    if (p.includes("gcp") || p.includes("google")) return "from-emerald-500/10 to-teal-500/5 text-emerald-400";
+    if (p.includes("vultr")) return "from-sky-500/10 to-blue-500/5 text-sky-400";
+    if (p.includes("linode") || p.includes("akamai")) return "from-green-500/10 to-emerald-500/5 text-green-400";
+    return "from-slate-500/10 to-slate-600/5 text-slate-400";
   };
 
   return (
     <div className="flex-1 flex flex-col p-8 overflow-y-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-900 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
             Server Inventory
@@ -77,7 +77,7 @@ export default function ServerList({
           </div>
           <button
             onClick={fetchServers}
-            className="p-2.5 bg-slate-900/60 border border-slate-850 hover:border-slate-750 hover:bg-slate-900 rounded-xl transition-all duration-300"
+            className="p-2.5 bg-slate-900/60 hover:bg-slate-900 rounded-xl transition-all duration-300"
             title="Refresh Inventory"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-cyan-400" : "text-slate-400"}`} />
@@ -93,7 +93,7 @@ export default function ServerList({
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Total Nodes</span>
               <h2 className="text-3xl font-extrabold text-white mt-1">{servers.length}</h2>
             </div>
-            <div className="p-3.5 bg-cyan-950/20 border border-cyan-500/25 rounded-2xl text-cyan-400 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)]">
+            <div className="p-3.5 bg-cyan-950/20 rounded-2xl text-cyan-400 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)]">
               <Layers className="h-5 w-5" />
             </div>
           </div>
@@ -105,7 +105,7 @@ export default function ServerList({
                 {servers.filter(s => { const p = (s.provider||"").toLowerCase(); return p.includes("aws") || p.includes("gcp") || p.includes("google"); }).length}
               </h2>
             </div>
-            <div className="p-3.5 bg-indigo-950/20 border border-indigo-500/25 rounded-2xl text-indigo-400 shadow-[0_0_15px_-3px_rgba(99,102,241,0.2)]">
+            <div className="p-3.5 bg-indigo-950/20 rounded-2xl text-indigo-400 shadow-[0_0_15px_-3px_rgba(99,102,241,0.2)]">
               <Shield className="h-5 w-5" />
             </div>
           </div>
@@ -117,7 +117,7 @@ export default function ServerList({
                 {servers.filter(s => s.auth_type === "key").length}
               </h2>
             </div>
-            <div className="p-3.5 bg-emerald-950/20 border border-emerald-500/25 rounded-2xl text-emerald-400 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]">
+            <div className="p-3.5 bg-emerald-950/20 rounded-2xl text-emerald-400 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]">
               <HardDrive className="h-5 w-5" />
             </div>
           </div>
@@ -157,7 +157,7 @@ export default function ServerList({
                     handleScanServer(s.id);
                   }}
                   disabled={scanningId === s.id}
-                  className="p-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-colors"
+                  className="p-2 bg-slate-900 rounded-lg text-slate-400 hover:text-cyan-400 transition-colors"
                   title="Audit Specifications"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${scanningId === s.id ? "animate-spin text-cyan-400" : ""}`} />
@@ -167,7 +167,7 @@ export default function ServerList({
                     e.stopPropagation();
                     handleDeleteServer(s.id, s.name);
                   }}
-                  className="p-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                  className="p-2 bg-slate-900 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
                   title="Delete VPS"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -176,7 +176,7 @@ export default function ServerList({
 
               <div>
                 {/* Custom Styled Provider Badge */}
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-r ${getProviderColor(s.provider)} border mb-3`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-r ${getProviderColor(s.provider)} mb-3`}>
                   {s.provider || "Generic VPS"}
                 </span>
 
@@ -191,7 +191,7 @@ export default function ServerList({
                 {s.tags && s.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-4">
                     {s.tags.map((t) => (
-                      <span key={t.id} className="text-[9px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/15 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                      <span key={t.id} className="text-[9px] bg-cyan-500/10 text-cyan-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
                         {t.name}
                       </span>
                     ))}
@@ -199,7 +199,7 @@ export default function ServerList({
                 )}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-850/60 flex items-center justify-between">
+              <div className="mt-6 pt-4 flex items-center justify-between">
                 <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                   Access: <span className="text-slate-400 font-bold">{s.auth_type}</span>
                 </span>
