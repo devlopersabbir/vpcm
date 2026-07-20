@@ -4,7 +4,7 @@ set -e
 # Repository configuration
 REPO="devlopersabbir/vpcm"
 
-# Text Styling & Colors
+# Text Styling & Colors (using printf-friendly variables)
 BOLD=$(tput bold 2>/dev/null || echo "")
 NORMAL=$(tput sgr0 2>/dev/null || echo "")
 RED=$(tput setaf 1 2>/dev/null || echo "")
@@ -14,48 +14,95 @@ BLUE=$(tput setaf 4 2>/dev/null || echo "")
 CYAN=$(tput setaf 6 2>/dev/null || echo "")
 WHITE=$(tput setaf 7 2>/dev/null || echo "")
 
-# Helper functions
+# Helper functions to print messages portably
 info() {
-    echo -e "${BLUE}[info]${NORMAL} $1"
+    printf "%s[info]%s %s\n" "${BLUE}" "${NORMAL}" "$1"
 }
 success() {
-    echo -e "${GREEN}[✓]${NORMAL} $1"
+    printf "%s[✓]%s %s\n" "${GREEN}" "${NORMAL}" "$1"
 }
 warn() {
-    echo -e "${YELLOW}[!]${NORMAL} $1"
+    printf "%s[!]%s %s\n" "${YELLOW}" "${NORMAL}" "$1"
 }
 error() {
-    echo -e "${RED}[error]${NORMAL} $1"
+    printf "%s[error]%s %s\n" "${RED}" "${NORMAL}" "$1"
 }
 skip() {
-    echo -e "${YELLOW}[-]${NORMAL} $1"
+    printf "%s[-]%s %s\n" "${YELLOW}" "${NORMAL}" "$1"
 }
 
 # Print Banner
-echo -e "${RED}${BOLD}"
+printf "%s%s\n" "${RED}" "${BOLD}"
 echo "  __   _____  ____  __  __ "
 echo "  \ \ / /  _ \/ ___||  \/  |"
 echo "   \ V /| |_) \___ \| |\/| |"
 echo "    \ / |  __/ ___) | |  | |"
 echo "     V  |_|   |____/|_|  |_|"
-echo -e "${NORMAL}"
-echo -e "${WHITE}${BOLD}VPSM / VPCM Uninstaller${NORMAL}"
-echo -e "This script will remove all installed VPSM binaries and shell wrappers.\n"
+printf "%s\n" "${NORMAL}"
+printf "%s%sVPSM / VPCM Uninstaller%s\n" "${WHITE}" "${BOLD}" "${NORMAL}"
+printf "This script will remove all installed VPSM binaries and shell wrappers.\n\n"
 
-# Interactive Step 1: Confirm before removing
-echo -e "${YELLOW}${BOLD}Warning:${NORMAL} This will permanently remove VPSM (vpsm/vpcm/vpsmd/vpsm-api) from your system."
-read -p "Are you sure you want to uninstall? [y/N]: " CONFIRM < /dev/tty
-CONFIRM=${CONFIRM:-"n"}
-if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-    warn "Uninstall cancelled."
-    exit 0
+# Default variables
+INSTALL_DIR="/usr/local/bin"
+REMOVE_WRAPPER="y"
+REMOVE_CONFIG="n"
+AUTO_CONFIRM="n"
+
+# Parse CLI arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--dir)
+            INSTALL_DIR="$2"
+            shift 2
+            ;;
+        -y|--yes)
+            AUTO_CONFIRM="y"
+            shift
+            ;;
+        --keep-wrapper)
+            REMOVE_WRAPPER="n"
+            shift
+            ;;
+        --keep-config)
+            REMOVE_CONFIG="n"
+            shift
+            ;;
+        --remove-config)
+            REMOVE_CONFIG="y"
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: uninstall.sh [options]"
+            echo "Options:"
+            echo "  -d, --dir <path>     Installation directory (default: /usr/local/bin)"
+            echo "  -y, --yes            Skip confirmation and uninstall VPSM"
+            echo "  --keep-wrapper       Do not remove the shell wrapper override"
+            echo "  --keep-config        Do not remove config and data directory (default)"
+            echo "  --remove-config      Remove config and data directory"
+            echo "  -h, --help           Show this help message"
+            exit 0
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+# Confirm uninstallation if not auto-confirmed
+if [ "$AUTO_CONFIRM" != "y" ]; then
+    if [ -t 0 ] && [ -c /dev/tty ]; then
+        printf "%sWarning:%s This will permanently remove VPSM (vpsm/vpcm/vpsmd/vpsm-api) from your system.\n" "${YELLOW}${BOLD}" "${NORMAL}"
+        read -p "Are you sure you want to uninstall? [y/N]: " CONFIRM < /dev/tty
+        CONFIRM=${CONFIRM:-"n"}
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            warn "Uninstall cancelled."
+            exit 0
+        fi
+    else
+        warn "Running in non-interactive environment without -y/--yes flag. Aborting to prevent accidental removal."
+        exit 1
+    fi
 fi
-
-# Interactive Step 2: Installation directory to clean
-echo -e "\n${BOLD}Step 1: Provide the installation directory to clean${NORMAL}"
-DEFAULT_INSTALL_DIR="/usr/local/bin"
-read -p "Installation path [default: $DEFAULT_INSTALL_DIR]: " INSTALL_DIR < /dev/tty
-INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}
 
 # Expand tilde (~) if present
 if [[ "$INSTALL_DIR" == ~* ]]; then
@@ -73,20 +120,28 @@ if [[ "$INSTALL_DIR" =~ [\$\{\}\*\?\'\"\|\<\>\&\;] ]]; then
     exit 1
 fi
 
-# Interactive Step 3: Remove shell wrappers
-echo -e "\n${BOLD}Step 2: Remove shell wrapper from shell profiles${NORMAL}"
-read -p "Remove the VPSM ssh wrapper from your shell profiles? [Y/n]: " REMOVE_WRAPPER < /dev/tty
-REMOVE_WRAPPER=${REMOVE_WRAPPER:-"y"}
+# Prompt for wrapper removal if not auto-confirmed
+if [ "$AUTO_CONFIRM" != "y" ] && [ "$REMOVE_WRAPPER" = "y" ]; then
+    if [ -t 0 ] && [ -c /dev/tty ]; then
+        read -p "Remove the VPSM ssh wrapper from your shell profiles? [Y/n]: " RM_WRAP < /dev/tty
+        REMOVE_WRAPPER=${RM_WRAP:-"y"}
+    fi
+fi
 
-echo ""
+printf "\n"
 
 # Remove binaries
 BINARIES=("vpsm" "vpcm" "vpsmd" "vpsm-api")
 for bin in "${BINARIES[@]}"; do
     BIN_PATH="$INSTALL_DIR/$bin"
     if [ -f "$BIN_PATH" ] || [ -L "$BIN_PATH" ]; then
-        if [ ! -w "$INSTALL_DIR" ]; then
-            sudo rm -f "$BIN_PATH"
+        if [ ! -w "$INSTALL_DIR" ] || { [ -f "$BIN_PATH" ] && [ ! -w "$BIN_PATH" ]; }; then
+            if command -v sudo >/dev/null 2>&1; then
+                sudo rm -f "$BIN_PATH"
+            else
+                error "Permission denied removing $BIN_PATH and 'sudo' is not available."
+                exit 1
+            fi
         else
             rm -f "$BIN_PATH"
         fi
@@ -107,16 +162,27 @@ remove_wrapper_from_file() {
         return
     fi
 
-    # Use a portable sed approach to strip the wrapper block
-    TMP_FILE=$(mktemp)
-    # Remove from blank line before comment through the closing brace of the ssh() function
+    # Use a portable awk/sed approach to strip the wrapper block
+    local tmp_file
+    tmp_file=$(mktemp)
     awk '
         /# VPSM ssh wrapper override/ { skip = 1; next }
         skip && /^}/ { skip = 0; next }
         skip { next }
         { print }
-    ' "$SHELL_RC" > "$TMP_FILE"
-    mv "$TMP_FILE" "$SHELL_RC"
+    ' "$SHELL_RC" > "$tmp_file"
+
+    if [ ! -w "$SHELL_RC" ]; then
+        if command -v sudo >/dev/null 2>&1; then
+            sudo mv "$tmp_file" "$SHELL_RC"
+        else
+            error "Permission denied modifying $SHELL_RC and 'sudo' is not available."
+            rm -f "$tmp_file"
+            exit 1
+        fi
+    else
+        mv "$tmp_file" "$SHELL_RC"
+    fi
     success "Removed VPSM wrapper from $SHELL_RC"
 }
 
@@ -126,12 +192,16 @@ if [[ "$REMOVE_WRAPPER" =~ ^[Yy]$ ]]; then
     remove_wrapper_from_file "$HOME/.bashrc"
 fi
 
-# Remove local data and config directories (optional)
-echo -e "\n${BOLD}Step 3: Clean local config and data${NORMAL}"
+# Remove local config and data directories
 CONFIG_DIR="$HOME/.config/vpsm"
 if [ -d "$CONFIG_DIR" ]; then
-    read -p "Remove config and data directory ($CONFIG_DIR)? [y/N]: " REMOVE_CONFIG < /dev/tty
-    REMOVE_CONFIG=${REMOVE_CONFIG:-"n"}
+    if [ "$AUTO_CONFIRM" != "y" ] && [ "$REMOVE_CONFIG" = "n" ]; then
+        if [ -t 0 ] && [ -c /dev/tty ]; then
+            read -p "Remove config and data directory ($CONFIG_DIR)? [y/N]: " RM_CONF < /dev/tty
+            REMOVE_CONFIG=${RM_CONF:-"n"}
+        fi
+    fi
+
     if [[ "$REMOVE_CONFIG" =~ ^[Yy]$ ]]; then
         rm -rf "$CONFIG_DIR"
         success "Removed config directory $CONFIG_DIR"
@@ -142,5 +212,5 @@ else
     skip "No config directory found at $CONFIG_DIR"
 fi
 
-echo -e "\n${GREEN}${BOLD}✨ VPSM has been successfully uninstalled.${NORMAL}"
-echo -e "Thank you for using VPSM! Visit ${CYAN}https://github.com/$REPO${NORMAL} for more information.\n"
+printf "\n%s%s✨ VPSM has been successfully uninstalled.%s\n" "${GREEN}" "${BOLD}" "${NORMAL}"
+printf "Thank you for using VPSM! Visit %shttps://github.com/%s%s for more information.\n\n" "${CYAN}" "$REPO" "${NORMAL}"
