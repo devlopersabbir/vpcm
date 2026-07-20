@@ -106,6 +106,9 @@ jobs:
             GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsmd$ext" ./cmd/vpsmd
             GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsm-api$ext" ./cmd/vpsm-api
             
+            # Copy shell wrapper to the staging folder
+            cp scripts/shell_wrapper.sh "release/$output_name/"
+            
             # Compress the binaries
             cd release
             if [ "$goos" = "windows" ]; then
