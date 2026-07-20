@@ -154,3 +154,9 @@ vpcm ssh root@10.0.0.5
 - **Custom Name Prompts:** If the host is not registered, VPSM will prompt you to enter a custom name upon successful login.
 - **Provider Detection:** The SSH connection agent automatically analyzes cloud metadata services (IMDS), DMI hardware vectors, DNS, and ASNs to determine the cloud provider (AWS, GCP, etc.) and save it to the host profile.
 - **Terminal Resize Listener:** Dynamically monitors window changes (`SIGWINCH`) on your machine and propagates them to the remote server to prevent broken terminal layouts.
+
+---
+
+## 🖥️ 7. Desktop Application Dashboard
+
+In addition to the CLI, VPSM includes a beautiful, cross-platform Wails desktop application. Refer to the [Desktop Application Documentation](file:///Users/sabbir/own/vpcm/wiki/Desktop-App.md) for full setup guides, system stat panels, and details.

@@ -1,4 +1,4 @@
-.PHONY: build test lint run clean release install uninstall
+.PHONY: build test lint run clean release install uninstall build-desktop dev-desktop build-all
 
 build:
 	@echo "Building binaries..."
@@ -73,6 +73,18 @@ uninstall:
 clean:
 	@echo "Cleaning up build artifacts..."
 	@rm -rf bin/
+	@rm -rf app/vpsm-desktop/build/bin/
 
 release: build
 	@echo "Release prepared successfully."
+
+build-desktop:
+	@echo "Building Wails desktop application..."
+	@cd app/vpsm-desktop && ~/go/bin/wails build
+
+dev-desktop:
+	@echo "Starting Wails desktop application in dev mode..."
+	@cd app/vpsm-desktop && ~/go/bin/wails dev
+
+build-all: build build-desktop
+	@echo "All targets (CLI & Desktop) built successfully."
