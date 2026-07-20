@@ -137,10 +137,13 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            tags: "-tags webkit2gtk_4_1"
           - os: macos-latest
             platform: darwin
+            tags: ""
           - os: windows-latest
             platform: windows
+            tags: ""
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -169,7 +172,7 @@ jobs:
         shell: bash
         run: |
           cd app/vpsm-desktop
-          ~/go/bin/wails build
+          ~/go/bin/wails build ${{ matrix.tags }}
 
       - name: Package Desktop Artifacts
         shell: bash

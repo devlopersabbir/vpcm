@@ -47,4 +47,4 @@ jobs:
       - name: Check Wails Desktop Build
         run: |
           cd app/vpsm-desktop
-          ~/go/bin/wails build
+          ~/go/bin/wails build -tags webkit2gtk_4_1
