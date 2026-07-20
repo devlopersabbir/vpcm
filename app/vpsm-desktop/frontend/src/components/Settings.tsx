@@ -12,14 +12,14 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
 
   return (
     <div className="flex-1 p-8 overflow-y-auto max-w-2xl mx-auto w-full">
-      <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-white to-slate-350 bg-clip-text text-transparent">
+      <h1 className="text-2xl font-black tracking-tight bg-linear-to-r from-white to-slate-350 bg-clip-text text-transparent">
         System Settings
       </h1>
       <p className="text-slate-400 text-sm mt-1">Configure database connections and background collection settings.</p>
 
-      <form onSubmit={onSave} className="mt-8 space-y-6 bg-slate-900/35 rounded-xl p-6 backdrop-blur-md">
+      <form onSubmit={onSave} className="mt-8 space-y-6 bg-slate-900/35 border border-slate-800/80 rounded-2xl p-6 shadow-xl shadow-black/30 backdrop-blur-md">
         {/* Database Section */}
-        <div className="pb-6">
+        <div className="pb-6 border-b border-slate-900/60">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5 mb-4">
             <Database className="h-4 w-4 text-cyan-400" />
             <span>Database Configuration</span>
@@ -49,9 +49,9 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   type="text"
                   value={config.Database.Path}
                   onChange={(e) => {
-                    const updated = { ...config };
-                    updated.Database.Path = e.target.value;
-                    setConfig(updated);
+                     const updated = { ...config };
+                     updated.Database.Path = e.target.value;
+                     setConfig(updated);
                   }}
                   className="w-full rounded-xl px-3.5 py-2 text-sm text-slate-200 font-mono focus:outline-none glass-input"
                 />
@@ -129,7 +129,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
         <div className="pt-4 flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-950/20 transition-all duration-200"
+            className="px-6 py-2.5 bg-linear-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-950/30 transition-all duration-200 border border-cyan-500/20 hover:border-cyan-400/40"
           >
             Save Configuration
           </button>

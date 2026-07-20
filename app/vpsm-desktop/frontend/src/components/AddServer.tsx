@@ -25,12 +25,12 @@ export default function AddServer({ onAdd }: AddServerProps) {
 
   return (
     <div className="flex-1 p-8 overflow-y-auto max-w-2xl mx-auto w-full">
-      <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-white to-slate-350 bg-clip-text text-transparent">
+      <h1 className="text-2xl font-black tracking-tight bg-linear-to-r from-white to-slate-350 bg-clip-text text-transparent">
         Add New Server
       </h1>
       <p className="text-slate-400 text-sm mt-1">Register a remote node in your secure inventory database.</p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-slate-900/35 rounded-2xl p-6 backdrop-blur-md">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-slate-900/35 border border-slate-800/80 rounded-2xl p-6 shadow-xl shadow-black/30 backdrop-blur-md">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-450 mb-1.5">Server Name *</label>
@@ -58,7 +58,7 @@ export default function AddServer({ onAdd }: AddServerProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-450 mb-1.5">SSH Port *</label>
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1.5">SSH Port *</label>
             <input
               type="number"
               required
@@ -68,7 +68,7 @@ export default function AddServer({ onAdd }: AddServerProps) {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-450 mb-1.5">SSH Username *</label>
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1.5">SSH Username *</label>
             <input
               type="text"
               required
@@ -78,7 +78,7 @@ export default function AddServer({ onAdd }: AddServerProps) {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-450 mb-1.5">Auth Type *</label>
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1.5">Auth Type *</label>
             <select
               value={formAuthType}
               onChange={(e) => setFormAuthType(e.target.value)}
@@ -91,7 +91,7 @@ export default function AddServer({ onAdd }: AddServerProps) {
         </div>
 
         <div>
-          <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-450 mb-1.5">
+          <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1.5">
             {formAuthType === "key" ? "SSH Private Key Path or Content" : "SSH Password"}
           </label>
           <textarea
@@ -106,7 +106,7 @@ export default function AddServer({ onAdd }: AddServerProps) {
         <div className="pt-4 flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-950/20 transition-all duration-200"
+            className="px-6 py-2.5 bg-linear-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-950/30 transition-all duration-200 border border-cyan-500/20 hover:border-cyan-400/40"
           >
             Register Server
           </button>

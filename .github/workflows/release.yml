@@ -137,7 +137,7 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            tags: "-tags webkit2gtk_4_1"
+            tags: "-tags webkit2_41"
           - os: macos-latest
             platform: darwin
             tags: ""
