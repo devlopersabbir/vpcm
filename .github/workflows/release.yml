@@ -182,8 +182,8 @@ jobs:
             powershell -Command "Compress-Archive -Path app/vpsm-desktop/build/bin/* -DestinationPath dist/vpsm-desktop-windows.zip" || zip -r dist/vpsm-desktop-windows.zip app/vpsm-desktop/build/bin/*
           elif [ "${{ matrix.platform }}" = "darwin" ]; then
             cd app/vpsm-desktop/build/bin
-            zip -r ../../../dist/vpsm-desktop-mac.zip .
-            cd ../../../
+            zip -r "$GITHUB_WORKSPACE/dist/vpsm-desktop-mac.zip" .
+            cd "$GITHUB_WORKSPACE"
           else
             tar -czf dist/vpsm-desktop-linux.tar.gz -C app/vpsm-desktop/build/bin .
           fi
