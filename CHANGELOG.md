@@ -1,5 +1,19 @@
 # Changelog
 
+## [v0.1.12] - 2026-07-20
+
+* fix: use GITHUB_WORKSPACE for absolute path resolution in macOS release build steps (73e3b80)
+* refactor: overhaul frontend UI components with updated styling, border definitions, and linear gradients (9490e20)
+* build: update Wails build command to include webkit2gtk_4_1 tags for Linux workflows (d3bfd95)
+* build: upgrade libwebkit2gtk dependency from 4.0 to 4.1 in CI workflows (9ac9640)
+* Merge branch 'dev' (2312ec8)
+* feat: implement cross-platform Wails desktop application with build support and CI/CD integration (d296ae0)
+* chore: remove unused package.json checksum file (c0d42cb)
+* refactor: remove borders from glass UI components to adopt a cleaner, borderless design (5579bc9)
+* feat: implement server management dashboard with Tailwind CSS and custom UI components (c165a8b)
+* feat: initialize project structure with Wails desktop application boilerplate (f4e1e65)
+
+
 ## [v0.1.11] - 2026-07-20
 
 * Merge branch 'dev' (f05ffa5)

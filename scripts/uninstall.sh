@@ -43,7 +43,22 @@ printf "%s%sVPSM / VPCM Uninstaller%s\n" "${WHITE}" "${BOLD}" "${NORMAL}"
 printf "This script will remove all installed VPSM binaries and shell wrappers.\n\n"
 
 # Default variables
-INSTALL_DIR="/usr/local/bin"
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+if [[ "$OS" =~ ^(mingw|msys|cygwin|windows) ]]; then
+    if [ -n "$LOCALAPPDATA" ]; then
+        WIN_DIR=$(echo "$LOCALAPPDATA/Programs/vpsm" | tr '\\' '/')
+        if command -v cygpath >/dev/null 2>&1; then
+            INSTALL_DIR=$(cygpath -u "$WIN_DIR")
+        else
+            INSTALL_DIR="$WIN_DIR"
+        fi
+    else
+        INSTALL_DIR="$HOME/bin"
+    fi
+else
+    INSTALL_DIR="/usr/local/bin"
+fi
+
 REMOVE_WRAPPER="y"
 REMOVE_CONFIG="n"
 AUTO_CONFIRM="n"
@@ -74,7 +89,7 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: uninstall.sh [options]"
             echo "Options:"
-            echo "  -d, --dir <path>     Installation directory (default: /usr/local/bin)"
+            echo "  -d, --dir <path>     Installation directory (default: /usr/local/bin or %LOCALAPPDATA%/Programs/vpsm)"
             echo "  -y, --yes            Skip confirmation and uninstall VPSM"
             echo "  --keep-wrapper       Do not remove the shell wrapper override"
             echo "  --keep-config        Do not remove config and data directory (default)"
@@ -110,7 +125,7 @@ if [[ "$INSTALL_DIR" == ~* ]]; then
 fi
 
 # Clean up path
-if [[ "$INSTALL_DIR" != /* ]]; then
+if [[ "$INSTALL_DIR" != /* ]] && [[ "$INSTALL_DIR" != [A-Za-z]:* ]]; then
     INSTALL_DIR="$(pwd)/$INSTALL_DIR"
 fi
 
@@ -131,7 +146,7 @@ fi
 printf "\n"
 
 # Remove binaries
-BINARIES=("vpsm" "vpcm" "vpsmd" "vpsm-api")
+BINARIES=("vpsm" "vpsm.exe" "vpcm" "vpcm.exe" "vpsmd" "vpsmd.exe" "vpsm-api" "vpsm-api.exe")
 for bin in "${BINARIES[@]}"; do
     BIN_PATH="$INSTALL_DIR/$bin"
     if [ -f "$BIN_PATH" ] || [ -L "$BIN_PATH" ]; then
@@ -146,8 +161,6 @@ for bin in "${BINARIES[@]}"; do
             rm -f "$BIN_PATH"
         fi
         success "Removed $BIN_PATH"
-    else
-        skip "$bin not found in $INSTALL_DIR — skipping"
     fi
 done
 

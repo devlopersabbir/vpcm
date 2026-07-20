@@ -59,12 +59,20 @@ case "$ARCH" in
         ;;
 esac
 
+EXE_EXT=""
+ARCHIVE_EXT="tar.gz"
+
 case "$OS" in
     darwin)
         OS="darwin"
         ;;
     linux)
         OS="linux"
+        ;;
+    mingw*|msys*|cygwin*|windows*)
+        OS="windows"
+        EXE_EXT=".exe"
+        ARCHIVE_EXT="zip"
         ;;
     *)
         error "Unsupported operating system $OS"
@@ -73,7 +81,21 @@ case "$OS" in
 esac
 
 # Default variables
-INSTALL_DIR="/usr/local/bin"
+if [ "$OS" = "windows" ]; then
+    if [ -n "$LOCALAPPDATA" ]; then
+        WIN_DIR=$(echo "$LOCALAPPDATA/Programs/vpsm" | tr '\\' '/')
+        if command -v cygpath >/dev/null 2>&1; then
+            INSTALL_DIR=$(cygpath -u "$WIN_DIR")
+        else
+            INSTALL_DIR="$WIN_DIR"
+        fi
+    else
+        INSTALL_DIR="$HOME/bin"
+    fi
+else
+    INSTALL_DIR="/usr/local/bin"
+fi
+
 ENABLE_WRAPPER="y"
 NON_INTERACTIVE="n"
 
@@ -95,7 +117,7 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: install.sh [options]"
             echo "Options:"
-            echo "  -d, --dir <path>     Installation directory (default: /usr/local/bin)"
+            echo "  -d, --dir <path>     Installation directory (default: /usr/local/bin or %LOCALAPPDATA%/Programs/vpsm)"
             echo "  -y, --yes            Non-interactive installation (accept all defaults)"
             echo "  --no-wrapper         Do not configure the shell wrapper override"
             echo "  -h, --help           Show this help message"
@@ -168,7 +190,7 @@ fi
 success "Latest release found: ${GREEN}${BOLD}$LATEST_RELEASE${NORMAL}"
 
 # Asset URL mapping
-FILENAME="vpsm-${OS}-${ARCH}.tar.gz"
+FILENAME="vpsm-${OS}-${ARCH}.${ARCHIVE_EXT}"
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_RELEASE/$FILENAME"
 
 # Interactive installation path step
@@ -186,7 +208,7 @@ if [[ "$INSTALL_DIR" == ~* ]]; then
 fi
 
 # Clean up path (remove trailing slashes, resolve relative path)
-if [[ "$INSTALL_DIR" != /* ]]; then
+if [[ "$INSTALL_DIR" != /* ]] && [[ "$INSTALL_DIR" != [A-Za-z]:* ]]; then
     INSTALL_DIR="$(pwd)/$INSTALL_DIR"
 fi
 
@@ -209,14 +231,33 @@ download_file "$DOWNLOAD_URL" "$TMP_DIR/$FILENAME"
 
 # Extract
 info "Extracting binaries..."
-tar -xzf "$TMP_DIR/$FILENAME" -C "$TMP_DIR"
+if [ "$ARCHIVE_EXT" = "zip" ]; then
+    if command -v unzip >/dev/null 2>&1; then
+        unzip -q "$TMP_DIR/$FILENAME" -d "$TMP_DIR"
+    elif command -v powershell.exe >/dev/null 2>&1; then
+        WIN_TMP="$TMP_DIR/$FILENAME"
+        if command -v cygpath >/dev/null 2>&1; then
+            WIN_TMP=$(cygpath -w "$TMP_DIR/$FILENAME")
+            WIN_DEST=$(cygpath -w "$TMP_DIR")
+        else
+            WIN_DEST="$TMP_DIR"
+        fi
+        powershell.exe -Command "Expand-Archive -Path '$WIN_TMP' -DestinationPath '$WIN_DEST' -Force"
+    elif command -v powershell >/dev/null 2>&1; then
+        powershell -Command "Expand-Archive -Path '$TMP_DIR/$FILENAME' -DestinationPath '$TMP_DIR' -Force"
+    else
+        error "Neither unzip nor powershell is installed to unpack $FILENAME."
+        exit 1
+    fi
+else
+    tar -xzf "$TMP_DIR/$FILENAME" -C "$TMP_DIR"
+fi
 
 # Ensure install dir exists
 if [ ! -d "$INSTALL_DIR" ]; then
     info "Creating installation directory $INSTALL_DIR..."
-    local parent_dir
     parent_dir=$(dirname "$INSTALL_DIR")
-    if [ ! -w "$parent_dir" ]; then
+    if [ ! -w "$parent_dir" ] && [ "$OS" != "windows" ]; then
         if command -v sudo >/dev/null 2>&1; then
             sudo mkdir -p "$INSTALL_DIR"
         else
@@ -230,12 +271,13 @@ fi
 
 # Function to move and chmod a binary safely
 install_binary() {
-    local BIN_NAME="$1"
+    local BIN_BASE="$1"
+    local BIN_NAME="${BIN_BASE}${EXE_EXT}"
     local SRC="$TMP_DIR/$BIN_NAME"
     local DEST="$INSTALL_DIR/$BIN_NAME"
     
     if [ ! -f "$SRC" ]; then
-        SRC=$(find "$TMP_DIR" -type f -name "$BIN_NAME*" | head -n 1)
+        SRC=$(find "$TMP_DIR" -type f -name "$BIN_NAME" | head -n 1)
     fi
 
     if [ -z "$SRC" ] || [ ! -f "$SRC" ]; then
@@ -247,14 +289,14 @@ install_binary() {
     if [ ! -w "$INSTALL_DIR" ] || { [ -f "$DEST" ] && [ ! -w "$DEST" ]; }; then
         if command -v sudo >/dev/null 2>&1; then
             sudo mv "$SRC" "$DEST"
-            sudo chmod +x "$DEST"
+            [ -z "$EXE_EXT" ] && sudo chmod +x "$DEST"
         else
             error "Permission denied writing to $DEST and 'sudo' is not available."
             exit 1
         fi
     else
         mv "$SRC" "$DEST"
-        chmod +x "$DEST"
+        [ -z "$EXE_EXT" ] && chmod +x "$DEST"
     fi
     success "Installed $BIN_NAME to $INSTALL_DIR"
 }
@@ -264,31 +306,39 @@ install_binary "vpsm"
 install_binary "vpsmd"
 install_binary "vpsm-api"
 
-# Create symlink/wrapper for vpcm if it doesn't exist
-if [ -L "$INSTALL_DIR/vpcm" ] || [ -f "$INSTALL_DIR/vpcm" ]; then
-    if [ ! -w "$INSTALL_DIR" ] || { [ -f "$INSTALL_DIR/vpcm" ] && [ ! -w "$INSTALL_DIR/vpcm" ]; }; then
+# Create symlink/wrapper/copy for vpcm if it doesn't exist
+VPCM_DEST="$INSTALL_DIR/vpcm${EXE_EXT}"
+VPSM_DEST="$INSTALL_DIR/vpsm${EXE_EXT}"
+
+if [ -L "$VPCM_DEST" ] || [ -f "$VPCM_DEST" ]; then
+    if [ ! -w "$INSTALL_DIR" ] || { [ -f "$VPCM_DEST" ] && [ ! -w "$VPCM_DEST" ]; }; then
         if command -v sudo >/dev/null 2>&1; then
-            sudo rm -f "$INSTALL_DIR/vpcm"
+            sudo rm -f "$VPCM_DEST"
         else
-            error "Permission denied removing old vpcm link and 'sudo' is not available."
+            error "Permission denied removing old vpcm and 'sudo' is not available."
             exit 1
         fi
     else
-        rm -f "$INSTALL_DIR/vpcm"
+        rm -f "$VPCM_DEST"
     fi
 fi
 
-if [ ! -w "$INSTALL_DIR" ]; then
-    if command -v sudo >/dev/null 2>&1; then
-        sudo ln -s "$INSTALL_DIR/vpsm" "$INSTALL_DIR/vpcm"
-    else
-        error "Permission denied creating vpcm symlink and 'sudo' is not available."
-        exit 1
-    fi
+if [ "$OS" = "windows" ]; then
+    cp "$VPSM_DEST" "$VPCM_DEST"
+    success "Linked vpcm${EXE_EXT} to vpsm${EXE_EXT}"
 else
-    ln -s "$INSTALL_DIR/vpsm" "$INSTALL_DIR/vpcm"
+    if [ ! -w "$INSTALL_DIR" ]; then
+        if command -v sudo >/dev/null 2>&1; then
+            sudo ln -s "$VPSM_DEST" "$VPCM_DEST"
+        else
+            error "Permission denied creating vpcm symlink and 'sudo' is not available."
+            exit 1
+        fi
+    else
+        ln -s "$VPSM_DEST" "$VPCM_DEST"
+    fi
+    success "Linked vpcm to vpsm"
 fi
-success "Linked vpcm to vpsm"
 
 # Wrapper shell insertion
 if [[ "$ENABLE_WRAPPER" =~ ^[Yy]$ ]]; then

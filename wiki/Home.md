@@ -8,10 +8,14 @@ Welcome to the official operations guide for **VPSM (VPS Manager)**, a developer
 
 ### One-liner Installer (Recommended)
 
-This script automatically detects your Operating System (Linux/macOS) and CPU architecture, downloads the latest compiled binary release from GitHub, installs the executables, and configures the `vpcm` shell alias/link:
-
+**Linux / macOS (or Git Bash):**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.ps1 | iex
 ```
 
 ### Build from Source
