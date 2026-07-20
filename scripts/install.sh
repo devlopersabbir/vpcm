@@ -299,7 +299,6 @@ if [[ "$ENABLE_WRAPPER" =~ ^[Yy]$ ]]; then
         WRAPPER_CONTENT=$(cat "$TMP_DIR/shell_wrapper.sh")
     else
         # Fall back to curl/wget
-        local temp_wrapper
         temp_wrapper=$(mktemp)
         if download_file "https://raw.githubusercontent.com/$REPO/main/scripts/shell_wrapper.sh" "$temp_wrapper" 2>/dev/null; then
             WRAPPER_CONTENT=$(cat "$temp_wrapper")
