@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.1.9] - 2026-07-19
+
+* Merge branch 'dev' (8d69f2c)
+* Merge branch 'installer' into dev (5f1f8c1)
+* feat: sanitize installation paths and force read input from tty in install and uninstall scripts (d2a417b)
+
+
 ## [v0.1.8] - 2026-07-19
 
 * Merge branch 'dev' (3074f31)
