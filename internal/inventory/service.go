@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/events"
+	"github.com/devlopersabbir/vpcm/internal/ssh"
 )
 
 type serverService struct {
@@ -19,12 +20,10 @@ func NewService(repo ServerRepository) ServerService {
 // ─── Core ─────────────────────────────────────────────────────────────────────
 
 func (s *serverService) AddServer(ctx context.Context, server *Server) error {
-	slog.Debug("Adding server", "name", server.Name, "host", server.Host)
-	if err := s.repo.Create(ctx, server); err != nil {
-		return err
+	if server.UUID == "" {
+		server.UUID = "uuid-" + server.Host
 	}
-	events.Publish(events.Event{Type: "ServerAdded", Payload: server})
-	return nil
+	return s.repo.Create(ctx, server)
 }
 
 func (s *serverService) GetServer(ctx context.Context, id uint) (*ServerView, error) {
@@ -77,6 +76,69 @@ func (s *serverService) RenameServer(ctx context.Context, id uint, newName strin
 
 func (s *serverService) ScanInventory(ctx context.Context, id uint) error {
 	slog.Info("Scanning inventory for server", "id", id)
+
+	server, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	sshSvc := ssh.NewService(10 * time.Second)
+	var client ssh.Client
+	if server.AuthType == "key" {
+		client, err = sshSvc.Connect(ctx, server.Host, server.Port, server.Username, server.AuthType, server.AuthSecret)
+	} else {
+		client, err = sshSvc.Connect(ctx, server.Host, server.Port, server.Username, "password", server.AuthSecret)
+	}
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	if server.Provider == "" || server.Provider == "Generic VPS" {
+		server.Provider = DetectProvider(ctx, client, server.Host)
+		_ = s.repo.Update(ctx, server)
+	}
+
+	osFamily, osVersion := DetectOS(ctx, client)
+	cpuModel, cpuCores, ramTotal, diskTotal := DetectSpecs(ctx, client)
+	si := DetectServerInfo(ctx, client)
+
+	_ = s.repo.UpsertNetwork(ctx, &ServerNetwork{
+		ServerID:         server.ID,
+		Hostname:         si.Hostname,
+		PublicIP:         si.PublicIP,
+		PrivateIP:        si.PrivateIP,
+		MACAddress:       si.MACAddress,
+		Region:           si.Region,
+		AvailabilityZone: si.AvailabilityZone,
+	})
+
+	_ = s.repo.UpsertHardware(ctx, &ServerHardware{
+		ServerID:       server.ID,
+		CPUModel:       cpuModel,
+		CPUCores:       cpuCores,
+		RAMTotal:       ramTotal,
+		SwapTotal:      si.SwapTotal,
+		DiskTotal:      diskTotal,
+		Virtualization: si.Virtualization,
+		InstanceType:   si.InstanceType,
+		SerialNumber:   si.SerialNumber,
+		BIOSVersion:    si.BIOSVersion,
+		Uptime:         si.Uptime,
+	})
+
+	_ = s.repo.UpsertOS(ctx, &ServerOS{
+		ServerID:       server.ID,
+		OSFamily:       osFamily,
+		OSVersion:      osVersion,
+		KernelVersion:  si.KernelVersion,
+		Architecture:   si.Architecture,
+		InitSystem:     si.InitSystem,
+		Timezone:       si.Timezone,
+		Locale:         si.Locale,
+		PackageManager: si.PackageManager,
+	})
+
 	events.Publish(events.Event{Type: "InventoryScanned", Payload: id})
 	return nil
 }
@@ -138,6 +200,9 @@ func (s *serverService) LogConnectionEnd(ctx context.Context, log *ConnectionLog
 		log.ErrorMessage = err.Error()
 	} else {
 		log.Status = "success"
+	}
+	if log.ID == 0 {
+		return s.repo.CreateConnectionLog(ctx, log)
 	}
 	return s.repo.UpdateConnectionLog(ctx, log)
 }

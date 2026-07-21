@@ -13,8 +13,14 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
   if (!selectedServer) return null;
 
   return (
-    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs z-30 flex justify-end">
-      <div className="w-full max-w-3xl bg-slate-900/98 h-full flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.6)] border-l border-slate-800/80 relative">
+    <div
+      onClick={() => setSelectedServer(null)}
+      className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs z-30 flex justify-end"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-3xl bg-slate-900/98 h-full flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.6)] border-l border-slate-800/80 relative"
+      >
         {/* Close Button */}
         <button
           onClick={() => setSelectedServer(null)}

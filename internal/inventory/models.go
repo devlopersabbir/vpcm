@@ -119,9 +119,8 @@ type ServerView struct {
 	IsFavorite bool       `json:"is_favorite"`
 	Tags      []Tag      `json:"tags"`
 
-	// Child domains — nil if not yet collected
-	Network  *ServerNetwork  `json:"network,omitempty"`
-	Hardware *ServerHardware `json:"hardware,omitempty"`
-	OS       *ServerOS       `json:"os,omitempty"`
+	Network  *ServerNetwork  `json:"network"`
+	Hardware *ServerHardware `json:"hardware"`
+	OS       *ServerOS       `json:"os"`
 	Software []Software      `json:"software"`
 }
