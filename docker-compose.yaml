@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  vpsm-api:
+    image: ghcr.io/devlopersabbir/vpcm/vpsm-api:latest
+    container_name: vpsm-api
+    ports:
+      - "8080:8080"
+    environment:
+      - VPSM_API_HOST=0.0.0.0
+      - VPSM_API_PORT=8080
+      - VPSM_DATABASE_DRIVER=mongodb
+    restart: unless-stopped

@@ -1,4 +1,4 @@
-.PHONY: build test lint run clean release install uninstall build-desktop dev-desktop build-all
+.PHONY: build test lint run clean release install uninstall build-desktop dev-desktop build-all docker-build docker-run
 
 build:
 	@echo "Building binaries..."
@@ -88,3 +88,12 @@ dev-desktop:
 
 build-all: build build-desktop
 	@echo "All targets (CLI & Desktop) built successfully."
+
+docker-build:
+	@echo "Building Docker image..."
+	@docker build -t vpsm-api .
+
+docker-run:
+	@echo "Running Docker compose..."
+	@docker compose up
+
