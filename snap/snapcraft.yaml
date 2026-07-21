@@ -2,6 +2,12 @@ name: vpsm
 base: core22
 version: "latest" # Replaced during CI by sed
 summary: VPS Manager — manage your servers from anywhere
+title: VPSM - VPS Manager
+contact: devlopersabbir@gmail.com
+license: MIT
+issues: https://github.com/devlopersabbir/vpcm/issues
+source-code: https://github.com/devlopersabbir/vpcm
+website: https://github.com/devlopersabbir/vpcm
 description: |
   VPSM is an open-source VPS management suite with an interactive CLI, dynamic inventory sync, 
   and a modern Desktop app built with Wails. Securely SSH, audit, and organize your Linux servers.
