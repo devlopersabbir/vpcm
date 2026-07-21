@@ -41,8 +41,12 @@ func (s *Server) setupRoutes() {
 	s.router.GET("/", s.handleRoot)
 
 	s.router.GET("/servers", s.handleListServers)
+	s.router.POST("/servers", s.handleCreateServer)
 	s.router.GET("/servers/:id", s.handleGetServer)
+	s.router.DELETE("/servers/:id", s.handleDeleteServer)
 	s.router.POST("/servers/:id/scan", s.handleScanServer)
+	s.router.POST("/servers/:id/favorite", s.handleFavoriteServer)
+	s.router.GET("/servers/:id/history", s.handleGetConnectionHistory)
 
 	s.router.GET("/notes", s.handleListNotes)
 	s.router.GET("/events", s.handleListEvents)
@@ -65,8 +69,12 @@ func (s *Server) handleRoot(c *gin.Context) {
 	endpoints := []endpointDoc{
 		{"GET", "/", "API info & available endpoints (this page)"},
 		{"GET", "/servers", "List all servers with full inventory (network, hardware, OS)"},
+		{"POST", "/servers", "Add a new server to the inventory"},
 		{"GET", "/servers/:id", "Get a single server by ID with full inventory"},
+		{"DELETE", "/servers/:id", "Delete a server from inventory"},
 		{"POST", "/servers/:id/scan", "Trigger a live inventory scan for a server"},
+		{"POST", "/servers/:id/favorite", "Toggle favorite status for a server"},
+		{"GET", "/servers/:id/history", "Get SSH connection history for a server"},
 		{"GET", "/notes?server_id=:id", "List notes attached to a server"},
 		{"GET", "/events", "Stream or list recent system events"},
 	}
@@ -142,10 +150,63 @@ func (s *Server) handleListNotes(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, notesList)
 }
-
 func (s *Server) handleListEvents(c *gin.Context) {
 	// Return skeleton event list
 	c.JSON(http.StatusOK, []any{})
+}
+
+func (s *Server) handleCreateServer(c *gin.Context) {
+	var srv inventory.Server
+	if err := c.ShouldBindJSON(&srv); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := s.inventoryService.AddServer(c.Request.Context(), &srv); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, srv)
+}
+
+func (s *Server) handleDeleteServer(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+		return
+	}
+	if err := s.inventoryService.RemoveServer(c.Request.Context(), uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "server deleted"})
+}
+
+func (s *Server) handleFavoriteServer(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+		return
+	}
+	fav, err := s.inventoryService.ToggleFavorite(c.Request.Context(), uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"is_favorite": fav})
+}
+
+func (s *Server) handleGetConnectionHistory(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+		return
+	}
+	history, err := s.inventoryService.GetConnectionHistory(c.Request.Context(), uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, history)
 }
 
 func LoggerMiddleware() gin.HandlerFunc {
