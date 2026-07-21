@@ -102,6 +102,8 @@ func (s *serverService) ScanInventory(ctx context.Context, id uint) error {
 	osFamily, osVersion := DetectOS(ctx, client)
 	cpuModel, cpuCores, ramTotal, diskTotal := DetectSpecs(ctx, client)
 	si := DetectServerInfo(ctx, client)
+	swList := DetectSoftware(ctx, client)
+	_ = s.repo.ReplaceSoftware(ctx, server.ID, swList)
 
 	_ = s.repo.UpsertNetwork(ctx, &ServerNetwork{
 		ServerID:         server.ID,
