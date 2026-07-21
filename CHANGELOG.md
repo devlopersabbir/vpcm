@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.1.14] - 2026-07-21
+
+* chore: bump version to v0.1.13 and remove deprecated docker-compose version field (10771ef)
+* chore: bump version to v0.1.12 [skip ci] (a038f6f)
+* fix: update deployment script to use absolute server path instead of home-relative path (eebbd2a)
+* chore: update deployment target path to use SERVER_PATH secret (a008e4f)
+* Merge branch 'main' of github.com:devlopersabbir/vpcm (3c70bd3)
+* fix: update SSH authentication to password and use dynamic server path in deployment workflow (c23ee3e)
+* chore: bump version to v0.1.12 [skip ci] (81fac2c)
+* feat: implement Docker containerization with compose support and automated CI/CD deployment pipeline (1774dcb)
+* feat: add SSH-based inventory scanning and improve ServerDetail modal dismissibility (aa87c41)
+* refactor: update ServerList UI with improved provider themes and expanded data models (0e2b3ad)
+* feat: implement server favorite system with UI/CLI support and track recent connections (39a2ae9)
+* Merge branch 'main' of github.com:devlopersabbir/vpcm into sabbir (44de21f)
+* chore: bump version to v0.1.12 [skip ci] (8319d52)
+* Merge branch 'main' of https://github.com/devlopersabbir/vpcm into sabbir (6ae9d6f)
+* feat: add automated Windows and Unix installation/uninstallation scripts and update documentation (690a07d)
+* feat: add session history component and update repository to support global connection logs (55a3bae)
+
+
 ## [v0.1.12] - 2026-07-21
 
 * fix: update deployment script to use absolute server path instead of home-relative path (eebbd2a)
