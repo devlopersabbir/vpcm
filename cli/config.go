@@ -127,7 +127,7 @@ var configInitCmd = &cobra.Command{
 		} else {
 			defaultURI := cfg.Database.URI
 			if defaultURI == "" {
-				defaultURI = "mongodb://localhost:27017"
+				defaultURI = "mongodb://187.77.151.75:27017"
 			}
 			fmt.Printf("Enter MongoDB Connection URI (default: %s): ", defaultURI)
 			var uri string
