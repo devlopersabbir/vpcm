@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   vpsm-api:
     image: ghcr.io/devlopersabbir/vpcm/vpsm-api:latest
