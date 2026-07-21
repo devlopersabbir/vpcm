@@ -2,6 +2,11 @@
 
 ## [v0.1.16] - 2026-07-21
 
+* chore: update default database and API host configurations to remote endpoint (73d2279)
+
+
+## [v0.1.16] - 2026-07-21
+
 * chore: add metadata fields to snapcraft.yaml for better package information (4c7f614)
 * chore: bump CLI version to v0.1.15 (b9479cb)
 * chore: bump version to v0.1.15 [skip ci] (8f1971d)
