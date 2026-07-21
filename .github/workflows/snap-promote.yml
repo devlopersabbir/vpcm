@@ -1,0 +1,36 @@
+name: Snapcraft Promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Snapcraft revision number to promote (e.g., 5)'
+        required: true
+        type: string
+      to_channel:
+        description: 'Target channel'
+        required: true
+        type: choice
+        options:
+          - beta
+          - candidate
+          - stable
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Snapcraft
+        run: sudo apt-get update && sudo apt-get install -y snapcraft
+
+      - name: Promote Revision
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          snapcraft promote vpsm \
+            --revision=${{ github.event.inputs.revision }} \
+            --from-channel=edge \
+            --to-channel=${{ github.event.inputs.to_channel }}

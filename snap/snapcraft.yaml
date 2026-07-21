@@ -1,0 +1,33 @@
+name: vpsm
+base: core22
+version: "latest" # Replaced during CI by sed
+summary: VPS Manager — manage your servers from anywhere
+description: |
+  VPSM is an open-source VPS management suite with an interactive CLI, dynamic inventory sync, 
+  and a modern Desktop app built with Wails. Securely SSH, audit, and organize your Linux servers.
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+parts:
+  vpsm-desktop:
+    plugin: nil
+    source: .
+    build-packages:
+      - libgtk-3-dev
+      - libwebkit2gtk-4.1-dev
+    override-build: |
+      cp -r $CRAFT_PART_SRC/app/vpsm-desktop/build/bin/vpsm-desktop $CRAFT_PART_INSTALL/vpsm-desktop
+
+apps:
+  vpsm-desktop:
+    command: vpsm-desktop
+    extensions: [gnome]
+    plugs:
+      - network
+      - network-bind
+      - home
+      - ssh-keys
