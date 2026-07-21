@@ -63,7 +63,7 @@ func Load() (*Config, error) {
 	// Defaults
 	viper.SetDefault("database.driver", "mongodb")
 	viper.SetDefault("database.path", filepath.Join(os.Getenv("HOME"), ".local", "share", "vpsm", "vpsm.db"))
-	viper.SetDefault("database.uri", "mongodb://187.77.151.75:27017")
+	viper.SetDefault("database.uri", "mongodb://localhost:27017")
 	viper.SetDefault("database.name", "vpsm")
 	viper.SetDefault("api.enabled", false)
 	viper.SetDefault("api.host", "127.0.0.1")

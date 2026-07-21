@@ -33,14 +33,16 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  useEffect(() => {
+    if (!showOnboarding) {
+      fetchServers();
+      fetchConfig();
+    }
+  }, [showOnboarding]);
+
   if (showOnboarding) {
     return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   }
-
-  useEffect(() => {
-    fetchServers();
-    fetchConfig();
-  }, []);
 
   const showStatus = (type: "success" | "error", text: string) => {
     setStatusMessage({ type, text });

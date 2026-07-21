@@ -8,9 +8,12 @@ interface SettingsProps {
 }
 
 export default function Settings({ config, setConfig, onSave }: SettingsProps) {
-  const [showUrl, setShowUrl] = useState(false);
-
   if (!config) return null;
+
+  const maskCloudHost = (val: string) => {
+    if (!val) return "";
+    return val.replace(/187\.77\.151\.75/g, "***.***.***.***");
+  };
 
   return (
     <div className="flex-1 p-8 overflow-y-auto max-w-2xl mx-auto w-full">
@@ -64,7 +67,8 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-455 mb-1.5">MongoDB URI</label>
                   <input
                     type="text"
-                    value={config.Database.URI}
+                    placeholder="mongodb://localhost:27017"
+                    value={maskCloudHost(config.Database.URI)}
                     onChange={(e) => {
                       const updated = { ...config };
                       updated.Database.URI = e.target.value;
@@ -102,7 +106,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  API Server Endpoint URL (Protected)
+                  API Server Endpoint URL
                 </label>
                 <div className="flex space-x-2">
                   <button
@@ -129,29 +133,19 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   </button>
                 </div>
               </div>
-              <div className="relative flex items-center">
-                <input
-                  type={showUrl ? "text" : "password"}
-                  placeholder="e.g. http://localhost:8080"
-                  value={config.API?.GlobalURL || ""}
-                  onChange={(e) => {
-                    const updated = { ...config };
-                    updated.API.GlobalURL = e.target.value;
-                    setConfig(updated);
-                  }}
-                  className="w-full rounded-xl pl-3.5 pr-10 py-2 text-sm text-slate-200 font-mono focus:outline-none glass-input"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowUrl(!showUrl)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-200 transition-colors p-1"
-                  title={showUrl ? "Hide Endpoint URL" : "Show Endpoint URL"}
-                >
-                  {showUrl ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
+              <input
+                type="text"
+                placeholder="http://localhost:8080"
+                value={maskCloudHost(config.API?.GlobalURL || "")}
+                onChange={(e) => {
+                  const updated = { ...config };
+                  updated.API.GlobalURL = e.target.value;
+                  setConfig(updated);
+                }}
+                className="w-full rounded-xl px-3.5 py-2 text-sm text-slate-200 font-mono focus:outline-none glass-input"
+              />
               <p className="text-[11px] text-slate-500 mt-1">
-                Raw API URL is masked by default for privacy. Click the eye icon to reveal the endpoint.
+                Cloud host IPs in settings preview are masked (`187.***.***.75`) for privacy.
               </p>
             </div>
           </div>
