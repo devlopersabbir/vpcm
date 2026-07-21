@@ -2,6 +2,19 @@
 
 ## [v0.1.15] - 2026-07-21
 
+* feat: add Snap packaging and CI/CD pipelines for automated builds and promotion (df5f227)
+* chore: update application icon asset (d093e04)
+* feat: add --id flag to audit command with shell completion support (abf1117)
+* feat: implement shell REPL with ghost-text suggestions and dynamic tab-completion support (c6d7120)
+* feat: add audit command and associated flags to CLI (9b461d1)
+* feat: update default DB URI to localhost and replace conditional IP masking with full redaction in settings UI (c59aad9)
+* feat: implement API URL masking in settings and obfuscate internal hostnames across UI components (9488b4d)
+* feat: implement custom http client with connection pooling to optimize network requests (e3f3115)
+* feat: implement onboarding flow with session management and update repository filter to support serverid aliases (a1ac4bd)
+
+
+## [v0.1.15] - 2026-07-21
+
 * chore: bump CLI version to v0.1.14 (4b8e625)
 * chore: bump version to v0.1.14 [skip ci] (3f16f63)
 * Merge branch 'dev' (d504ec2)
