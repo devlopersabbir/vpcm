@@ -12,6 +12,14 @@ import (
 	"github.com/devlopersabbir/vpcm/internal/inventory"
 )
 
+var httpClient = &http.Client{
+	Transport: &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     5 * time.Second,
+	},
+}
+
 // App struct
 type App struct {
 	ctx context.Context
@@ -47,7 +55,7 @@ func (a *App) GetServers() ([]inventory.ServerView, error) {
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +83,7 @@ func (a *App) GetServer(id uint) (*inventory.ServerView, error) {
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +126,7 @@ func (a *App) AddServer(name string, host string, port int, username string, aut
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -141,7 +149,7 @@ func (a *App) DeleteServer(id uint) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -164,7 +172,7 @@ func (a *App) GetConnectionHistory(id uint) ([]inventory.ConnectionLog, error) {
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +204,7 @@ func (a *App) ScanServer(id uint) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -219,7 +227,7 @@ func (a *App) ToggleFavorite(id uint) (bool, error) {
 		return false, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return false, err
 	}
