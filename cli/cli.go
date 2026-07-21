@@ -51,9 +51,13 @@ func init() {
 	listCmd.Flags().BoolVarP(&listFavorites, "favorites", "f", false, "Filter to only show favorite servers")
 	listCmd.Flags().BoolVarP(&listRecents, "recents", "r", false, "List recently connected servers first")
 
+	// audit flags
+	auditCmd.Flags().StringVarP(&auditFlagName, "name", "n", "", "Server name to audit")
+	auditCmd.Flags().StringVarP(&auditFlagHost, "host", "H", "", "Server host IP/address to audit")
+
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverFavoriteCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
-	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd)
+	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd, auditCmd)
 }
 
 func Execute() {
