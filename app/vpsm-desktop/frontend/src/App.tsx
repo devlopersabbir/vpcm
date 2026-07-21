@@ -123,6 +123,18 @@ export default function App() {
     }
   };
 
+  const handleRefreshServer = async () => {
+    if (!selectedServer) return;
+    try {
+      const detailed = await GetServer(selectedServer.id);
+      if (detailed) setSelectedServer(detailed);
+      const history = await GetConnectionHistory(selectedServer.id);
+      if (history) setLogs(history);
+    } catch (err: any) {
+      console.error("Failed to refresh server details/logs", err);
+    }
+  };
+
   const handleToggleFavorite = async (id: number) => {
     try {
       await ToggleFavorite(id);
@@ -202,6 +214,7 @@ export default function App() {
           selectedServer={selectedServer}
           setSelectedServer={setSelectedServer}
           logs={logs}
+          onRefresh={handleRefreshServer}
         />
       </main>
     </div>

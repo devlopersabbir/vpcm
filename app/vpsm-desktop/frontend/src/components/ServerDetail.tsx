@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { Info, Cpu, HardDrive, Network as NetIcon, Code, Clock, X, Tag as TagIcon, Server, Database, Activity } from "lucide-react";
+import { Info, Cpu, HardDrive, Network as NetIcon, Code, Clock, X, Tag as TagIcon, Server, Database, Activity, RefreshCw } from "lucide-react";
 
 interface ServerDetailProps {
   selectedServer: any;
   setSelectedServer: (s: any) => void;
   logs: any[];
+  onRefresh: () => Promise<void>;
 }
 
-export default function ServerDetail({ selectedServer, setSelectedServer, logs }: ServerDetailProps) {
+export default function ServerDetail({ selectedServer, setSelectedServer, logs, onRefresh }: ServerDetailProps) {
   const [detailTab, setDetailTab] = useState<"overview" | "hardware" | "os" | "network" | "software" | "logs">("overview");
+  const [refreshing, setRefreshing] = useState(false);
 
   if (!selectedServer) return null;
 
@@ -30,12 +32,26 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs }
         </button>
 
         {/* Header */}
-        <div className="p-8 bg-slate-950/20 border-b border-slate-900/60">
-          <span className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-cyan-950/30 text-cyan-400 border border-cyan-800/30 shadow-[0_2px_8px_rgba(6,182,212,0.1)]">
-            {selectedServer.provider || "Generic VPS"}
-          </span>
-          <h2 className="text-xl font-black text-white mt-2 tracking-tight">{selectedServer.name}</h2>
-          <p className="text-slate-500 font-mono text-xs mt-1">{selectedServer.username}@{selectedServer.host}:{selectedServer.port}</p>
+        <div className="p-8 bg-slate-950/20 border-b border-slate-900/60 flex justify-between items-start">
+          <div>
+            <span className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-cyan-950/30 text-cyan-400 border border-cyan-800/30 shadow-[0_2px_8px_rgba(6,182,212,0.1)]">
+              {selectedServer.provider || "Generic VPS"}
+            </span>
+            <h2 className="text-xl font-black text-white mt-2 tracking-tight">{selectedServer.name}</h2>
+            <p className="text-slate-500 font-mono text-xs mt-1">{selectedServer.username}@{selectedServer.host}:{selectedServer.port}</p>
+          </div>
+          <button
+            onClick={async () => {
+              setRefreshing(true);
+              await onRefresh();
+              setRefreshing(false);
+            }}
+            disabled={refreshing}
+            className="mr-12 p-2 bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-cyan-400 rounded-xl border border-slate-700/50 transition-all duration-200"
+            title="Refresh Server Specs & Logs"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin text-cyan-400" : ""}`} />
+          </button>
         </div>
 
         {/* Tab Controls */}

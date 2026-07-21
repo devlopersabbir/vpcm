@@ -30,7 +30,7 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) getAPIURL() string {
 	cfg, err := config.Load()
-	if err == nil && cfg.API.GlobalURL != "" {
+	if err == nil && cfg.API.GlobalURL != "" && cfg.API.GlobalURL != "https://api.vpsm.dev" {
 		return cfg.API.GlobalURL
 	}
 	return "http://187.77.151.75:8080"
@@ -169,6 +169,10 @@ func (a *App) GetConnectionHistory(id uint) ([]inventory.ConnectionLog, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return []inventory.ConnectionLog{}, nil
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status: %d", resp.StatusCode)
