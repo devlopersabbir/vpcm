@@ -2,6 +2,15 @@
 
 ## [v0.1.14] - 2026-07-21
 
+* Merge branch 'dev' (d504ec2)
+* refactor: perform inventory scans in background and update API response to 202 Accepted (3c31992)
+* feat: implement automated software detection and repository persistence for server inventories (d80afb5)
+* feat: add manual refresh capability for server details and logs with improved API error handling and thread-safe configuration loading (317a4b9)
+* feat: implement REST API endpoints and client-side HTTP calls for server management operations (ea5b63f)
+
+
+## [v0.1.14] - 2026-07-21
+
 * chore: bump version to v0.1.13 and remove deprecated docker-compose version field (10771ef)
 * chore: bump version to v0.1.12 [skip ci] (a038f6f)
 * fix: update deployment script to use absolute server path instead of home-relative path (eebbd2a)
