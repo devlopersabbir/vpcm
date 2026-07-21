@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Server, Search, RefreshCw, Trash2, HardDrive, Star, Clock, Key, Shield, ChevronRight, Activity } from "lucide-react";
+import { maskHost } from "../utils/mask";
 
 interface ServerView {
   id: number;
@@ -270,7 +271,7 @@ export default function ServerList({
                       {s.name}
                     </h3>
                     <p className="text-slate-500 text-[10px] font-mono mt-0.5">
-                      {s.username}@{s.host}:{s.port}
+                      {s.username}@{maskHost(s.host)}:{s.port}
                     </p>
                   </div>
 

@@ -1,5 +1,5 @@
-import React from "react";
-import { Database, Terminal } from "lucide-react";
+import React, { useState } from "react";
+import { Database, Terminal, Eye, EyeOff } from "lucide-react";
 
 interface SettingsProps {
   config: any;
@@ -8,6 +8,8 @@ interface SettingsProps {
 }
 
 export default function Settings({ config, setConfig, onSave }: SettingsProps) {
+  const [showUrl, setShowUrl] = useState(false);
+
   if (!config) return null;
 
   return (
@@ -95,6 +97,64 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
             <Terminal className="h-4 w-4 text-cyan-400" />
             <span>General Preferences</span>
           </h3>
+
+          <div className="space-y-4 mb-4">
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  API Server Endpoint URL (Protected)
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = { ...config };
+                      updated.API.GlobalURL = "http://localhost:8080";
+                      setConfig(updated);
+                    }}
+                    className="text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-md"
+                  >
+                    Set Local Host
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = { ...config };
+                      updated.API.GlobalURL = "http://187.77.151.75:8080";
+                      setConfig(updated);
+                    }}
+                    className="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 border border-indigo-800/40 px-2 py-0.5 rounded-md"
+                  >
+                    Set Cloud Default
+                  </button>
+                </div>
+              </div>
+              <div className="relative flex items-center">
+                <input
+                  type={showUrl ? "text" : "password"}
+                  placeholder="e.g. http://localhost:8080"
+                  value={config.API?.GlobalURL || ""}
+                  onChange={(e) => {
+                    const updated = { ...config };
+                    updated.API.GlobalURL = e.target.value;
+                    setConfig(updated);
+                  }}
+                  className="w-full rounded-xl pl-3.5 pr-10 py-2 text-sm text-slate-200 font-mono focus:outline-none glass-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowUrl(!showUrl)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-200 transition-colors p-1"
+                  title={showUrl ? "Hide Endpoint URL" : "Show Endpoint URL"}
+                >
+                  {showUrl ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Raw API URL is masked by default for privacy. Click the eye icon to reveal the endpoint.
+              </p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

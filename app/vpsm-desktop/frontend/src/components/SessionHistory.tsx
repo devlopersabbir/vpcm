@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Clock, Search, RefreshCw, AlertCircle } from "lucide-react";
 import { GetConnectionHistory } from "../../wailsjs/go/main/App";
+import { maskHost } from "../utils/mask";
 
 export default function SessionHistory() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -91,7 +92,7 @@ export default function SessionHistory() {
                     <span className="font-extrabold text-slate-200">{log.server_name}</span>
                   </td>
                   <td className="px-6 py-4 font-mono text-slate-400">
-                    {log.username}@{log.host}
+                    {log.username}@{maskHost(log.host)}
                   </td>
                   <td className="px-6 py-4 text-slate-400">
                     {new Date(log.logged_in_at).toLocaleString()}

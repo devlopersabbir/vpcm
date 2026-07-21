@@ -77,7 +77,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <div className="space-y-1.5 text-slate-350">
               <div className="flex items-center space-x-2 text-cyan-400 font-bold">
                 <span>$</span>
-                <span>vpsm audit --host 187.77.151.75</span>
+                <span>vpsm audit --host app.vpsm.io</span>
               </div>
               <div className="text-slate-400">[info] Connecting over SSH (rsa-2048)...</div>
               <div className="text-emerald-400">[success] Discovered Ubuntu 24.04 LTS (x86_64)</div>

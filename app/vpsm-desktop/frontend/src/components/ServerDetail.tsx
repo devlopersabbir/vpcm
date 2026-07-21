@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Info, Cpu, HardDrive, Network as NetIcon, Code, Clock, X, Tag as TagIcon, Server, Database, Activity, RefreshCw } from "lucide-react";
+import { maskHost } from "../utils/mask";
 
 interface ServerDetailProps {
   selectedServer: any;
@@ -38,7 +39,7 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs, 
               {selectedServer.provider || "Generic VPS"}
             </span>
             <h2 className="text-xl font-black text-white mt-2 tracking-tight">{selectedServer.name}</h2>
-            <p className="text-slate-500 font-mono text-xs mt-1">{selectedServer.username}@{selectedServer.host}:{selectedServer.port}</p>
+            <p className="text-slate-500 font-mono text-xs mt-1">{selectedServer.username}@{maskHost(selectedServer.host)}:{selectedServer.port}</p>
           </div>
           <button
             onClick={async () => {
@@ -198,8 +199,8 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs, 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-xs">
                   {[
                     { label: "Hostname", val: selectedServer.network.hostname, mono: true },
-                    { label: "Public IP", val: selectedServer.network.public_ip, mono: true },
-                    { label: "Private IP", val: selectedServer.network.private_ip, mono: true },
+                    { label: "Public IP", val: maskHost(selectedServer.network.public_ip), mono: true },
+                    { label: "Private IP", val: maskHost(selectedServer.network.private_ip), mono: true },
                     { label: "MAC Address", val: selectedServer.network.mac_address, mono: true },
                     { label: "Cloud Region", val: selectedServer.network.region },
                     { label: "Availability Zone", val: selectedServer.network.availability_zone }
