@@ -15,10 +15,11 @@ import (
 )
 
 var sshCmd = &cobra.Command{
-	Use:   "ssh [id | name | username@host]",
-	Short: "Connect to a server via SSH (saves credentials to database)",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runSSHConnection,
+	Use:               "ssh [id | name | username@host]",
+	Short:             "Connect to a server via SSH (saves credentials to database)",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: serverNameCompletions,
+	RunE:              runSSHConnection,
 }
 
 func promptServerName(defaultName string) string {

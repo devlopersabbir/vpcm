@@ -222,9 +222,10 @@ var serverAddCmd = &cobra.Command{
 }
 
 var serverRemoveCmd = &cobra.Command{
-	Use:   "remove [id | name]",
-	Short: "Remove a server from inventory",
-	Args:  cobra.ExactArgs(1),
+	Use:               "remove [id | name]",
+	Short:             "Remove a server from inventory",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: serverNameCompletions,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
 
@@ -314,9 +315,10 @@ var serverFlushCmd = &cobra.Command{
 }
 
 var serverRenameCmd = &cobra.Command{
-	Use:   "rename [id | name] [new_name]",
-	Short: "Rename a server in inventory without changing credentials",
-	Args:  cobra.ExactArgs(2),
+	Use:               "rename [id | name] [new_name]",
+	Short:             "Rename a server in inventory without changing credentials",
+	Args:              cobra.ExactArgs(2),
+	ValidArgsFunction: serverNameCompletions,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
 		newName := strings.TrimSpace(args[1])
@@ -373,9 +375,10 @@ var serverRenameCmd = &cobra.Command{
 }
 
 var serverFavoriteCmd = &cobra.Command{
-	Use:   "favorite [id | name]",
-	Short: "Toggle the favorite status of a server",
-	Args:  cobra.ExactArgs(1),
+	Use:               "favorite [id | name]",
+	Short:             "Toggle the favorite status of a server",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: serverNameCompletions,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
 

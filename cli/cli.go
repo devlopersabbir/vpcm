@@ -54,10 +54,12 @@ func init() {
 	// audit flags
 	auditCmd.Flags().StringVarP(&auditFlagName, "name", "n", "", "Server name to audit")
 	auditCmd.Flags().StringVarP(&auditFlagHost, "host", "H", "", "Server host IP/address to audit")
+	_ = auditCmd.RegisterFlagCompletionFunc("name", serverNameCompletions)
+	_ = auditCmd.RegisterFlagCompletionFunc("host", serverHostCompletions)
 
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverFavoriteCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
-	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd, auditCmd)
+	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd, auditCmd, completionCmd, shellCmd)
 }
 
 func Execute() {
