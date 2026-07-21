@@ -23,6 +23,7 @@ var knownCommands = []string{
 	"ssh",
 	"audit --name",
 	"audit --host",
+	"audit --id",
 	"list",
 	"list --favorites",
 	"list --recents",

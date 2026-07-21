@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,7 @@ var (
 var (
 	auditFlagName string
 	auditFlagHost string
+	auditFlagID   uint
 )
 
 // ─── Command ──────────────────────────────────────────────────────────────────
@@ -49,19 +51,20 @@ displayed as it completes. Results are saved back to your local inventory.
 
 Examples:
   vpsm audit --name my-vps
-  vpsm audit --host 52.54.164.79`,
+  vpsm audit --host 52.54.164.79
+  vpsm audit --id 3`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		auditFlagName = strings.TrimSpace(auditFlagName)
 		auditFlagHost = strings.TrimSpace(auditFlagHost)
 
-		if auditFlagName == "" && auditFlagHost == "" {
-			return fmt.Errorf("provide at least one of --name or --host")
+		if auditFlagName == "" && auditFlagHost == "" && auditFlagID == 0 {
+			return fmt.Errorf("provide at least one of --name, --host, or --id")
 		}
 
 		ctx := cmd.Context()
 
 		// ── 1. Resolve server from inventory ─────────────────────────────────
-		server, err := resolveAuditTarget(ctx, auditFlagName, auditFlagHost)
+		server, err := resolveAuditTarget(ctx, auditFlagName, auditFlagHost, auditFlagID)
 		if err != nil {
 			auditPrint(auditStyleError, "error", err.Error())
 			return err
@@ -212,11 +215,21 @@ Examples:
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-func resolveAuditTarget(ctx context.Context, name, host string) (*inventory.Server, error) {
+func resolveAuditTarget(ctx context.Context, name, host string, id uint) (*inventory.Server, error) {
 	repo, _, err := initRepoAndService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to inventory: %w", err)
 	}
+
+	// --id: direct lookup by primary key
+	if id != 0 {
+		s, err := repo.GetByID(ctx, id)
+		if err != nil || s == nil {
+			return nil, fmt.Errorf("no server found with id %s", strconv.Itoa(int(id)))
+		}
+		return s, nil
+	}
+
 	servers, err := repo.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list servers: %w", err)

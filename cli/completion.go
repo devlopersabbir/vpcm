@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -43,6 +44,25 @@ func serverHostCompletions(cmd *cobra.Command, args []string, toComplete string)
 		hosts = append(hosts, s.Host+"\t"+s.Name)
 	}
 	return hosts, cobra.ShellCompDirectiveNoFileComp
+}
+
+// serverIDCompletions returns all registered server IDs from the local
+// inventory database. Used as a flag completion function for --id flags.
+func serverIDCompletions(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	repo, _, err := initRepoAndService(context.Background())
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	servers, err := repo.List(context.Background())
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var ids []string
+	for _, s := range servers {
+		ids = append(ids, fmt.Sprintf("%d", s.ID)+"\t"+s.Name+" ("+s.Host+")")
+	}
+	return ids, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completionCmd generates the shell completion script for bash, zsh, fish, or powershell.

@@ -54,8 +54,10 @@ func init() {
 	// audit flags
 	auditCmd.Flags().StringVarP(&auditFlagName, "name", "n", "", "Server name to audit")
 	auditCmd.Flags().StringVarP(&auditFlagHost, "host", "H", "", "Server host IP/address to audit")
+	auditCmd.Flags().UintVar(&auditFlagID, "id", 0, "Server database ID to audit")
 	_ = auditCmd.RegisterFlagCompletionFunc("name", serverNameCompletions)
 	_ = auditCmd.RegisterFlagCompletionFunc("host", serverHostCompletions)
+	_ = auditCmd.RegisterFlagCompletionFunc("id", serverIDCompletions)
 
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverFavoriteCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
