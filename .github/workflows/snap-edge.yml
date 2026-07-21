@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     steps:
       - name: Checkout code
@@ -45,7 +45,7 @@ jobs:
 
       - name: Build Snap Package
         run: |
-          snapcraft
+          snapcraft pack --destructive-mode
 
       - name: Upload to Snap Store (Edge)
         env:
