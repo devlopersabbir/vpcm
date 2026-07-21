@@ -52,7 +52,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
           source: "docker-compose.yaml"
           target: "~/vpsm-api"
@@ -65,15 +65,15 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
           envs: GITHUB_TOKEN,GITHUB_ACTOR
           script: |
-            cd ~/vpsm-api
-            
+            cd ~/${{SERVER_PATH}}
+
             # Login to GHCR
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-            
+
             # Restart service and clean up
             docker compose down --remove-orphans
             docker compose pull
