@@ -292,6 +292,17 @@ export default function ServerList({
                           </span>
                         </div>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleScanServer(s.id);
+                        }}
+                        disabled={isScanning}
+                        className="w-full flex items-center justify-center space-x-1.5 py-1.5 mt-3.5 rounded-xl border border-dashed border-slate-800/80 text-[10px] text-slate-500 hover:text-cyan-400 hover:border-cyan-500/30 transition-all duration-200"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${isScanning ? "animate-spin text-cyan-400" : ""}`} />
+                        <span>{isScanning ? "Re-collecting Specs..." : "Refresh Specifications"}</span>
+                      </button>
                     </div>
                   ) : (
                     <div className="mt-4 border-t border-slate-900/60 pt-3.5">

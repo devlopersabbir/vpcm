@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -52,9 +53,13 @@ type PluginsConfig struct {
 }
 
 var CConfig Config
+var configMu sync.Mutex
 
 // Load loads config from default file, overrides from environment and/or flags
 func Load() (*Config, error) {
+	configMu.Lock()
+	defer configMu.Unlock()
+
 	// Defaults
 	viper.SetDefault("database.driver", "mongodb")
 	viper.SetDefault("database.path", filepath.Join(os.Getenv("HOME"), ".local", "share", "vpsm", "vpsm.db"))

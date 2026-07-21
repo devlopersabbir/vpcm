@@ -388,3 +388,101 @@ func DetectServerInfo(ctx context.Context, client ssh.Client) ServerInfo {
 
 	return info
 }
+
+// DetectSoftware scans the server for common software, applications, runtimes, and databases
+func DetectSoftware(ctx context.Context, client ssh.Client) []Software {
+	var detected []Software
+
+	commonApps := []struct {
+		name string
+		cmd  string
+	}{
+		// Web servers
+		{"nginx", "nginx -v 2>&1"},
+		{"apache2", "apache2 -v 2>/dev/null || httpd -v 2>/dev/null"},
+		{"caddy", "caddy version 2>/dev/null"},
+		// Databases
+		{"mysql", "mysql --version 2>/dev/null"},
+		{"postgresql", "postgres --version 2>/dev/null || pg_config --version 2>/dev/null"},
+		{"redis", "redis-server --version 2>/dev/null"},
+		{"mongodb", "mongod --version 2>/dev/null"},
+		{"sqlite3", "sqlite3 --version 2>/dev/null"},
+		// Developer runtimes
+		{"node", "node --version 2>/dev/null"},
+		{"npm", "npm --version 2>/dev/null"},
+		{"python3", "python3 --version 2>/dev/null"},
+		{"go", "go version 2>/dev/null"},
+		{"rustc", "rustc --version 2>/dev/null"},
+		{"docker", "docker --version 2>/dev/null"},
+		{"git", "git --version 2>/dev/null"},
+		{"java", "java -version 2>&1"},
+		{"php", "php -v 2>/dev/null"},
+	}
+
+	for _, app := range commonApps {
+		out, err := client.RunCommand(ctx, app.cmd)
+		if err == nil && len(out) > 0 {
+			version := cleanVersionOutput(app.name, out)
+			detected = append(detected, Software{
+				Name:    app.name,
+				Version: version,
+			})
+		}
+	}
+
+	return detected
+}
+
+func cleanVersionOutput(name, output string) string {
+	lines := strings.Split(output, "\n")
+	if len(lines) == 0 {
+		return "Installed"
+	}
+	firstLine := strings.TrimSpace(lines[0])
+
+	switch name {
+	case "nginx":
+		if idx := strings.Index(firstLine, "/"); idx != -1 {
+			return firstLine[idx+1:]
+		}
+	case "mysql":
+		parts := strings.Fields(firstLine)
+		for i, p := range parts {
+			if strings.ToLower(p) == "ver" && i+1 < len(parts) {
+				return parts[i+1]
+			}
+		}
+	case "postgresql":
+		parts := strings.Fields(firstLine)
+		if len(parts) >= 3 {
+			return parts[2]
+		}
+	case "go":
+		parts := strings.Fields(firstLine)
+		if len(parts) >= 3 {
+			return strings.TrimPrefix(parts[2], "go")
+		}
+	case "docker":
+		parts := strings.Fields(firstLine)
+		if len(parts) >= 3 {
+			return strings.TrimSuffix(parts[2], ",")
+		}
+	case "git":
+		parts := strings.Fields(firstLine)
+		if len(parts) >= 3 {
+			return parts[2]
+		}
+	case "node":
+		return strings.TrimPrefix(firstLine, "v")
+	case "python3":
+		parts := strings.Fields(firstLine)
+		if len(parts) >= 2 {
+			return parts[1]
+		}
+	}
+
+	cleaned := firstLine
+	cleaned = strings.TrimPrefix(cleaned, "version")
+	cleaned = strings.TrimPrefix(cleaned, "v")
+	return strings.TrimSpace(cleaned)
+}
