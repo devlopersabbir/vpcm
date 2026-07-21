@@ -135,6 +135,32 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           </button>
         </div>
       </form>
+
+      {/* Account & Onboarding Reset Section */}
+      <div className="mt-6 bg-slate-900/35 border border-slate-800/80 rounded-2xl p-6 shadow-xl shadow-black/30 backdrop-blur-md flex justify-between items-center">
+        <div>
+          <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+            <Terminal className="h-4 w-4 text-indigo-400" />
+            <span>Onboarding & Session Profile</span>
+          </h3>
+          <p className="text-slate-500 text-xs mt-1">
+            {localStorage.getItem("vpsm_user_session")
+              ? `Connected as: ${JSON.parse(localStorage.getItem("vpsm_user_session")!).name} (${JSON.parse(localStorage.getItem("vpsm_user_session")!).provider})`
+              : "Guest Session (No account connected)"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            localStorage.removeItem("vpsm_onboarding_completed");
+            localStorage.removeItem("vpsm_user_session");
+            window.location.reload();
+          }}
+          className="px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl border border-slate-700/60 transition-all duration-200"
+        >
+          Re-run Onboarding
+        </button>
+      </div>
     </div>
   );
 }

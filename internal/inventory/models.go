@@ -5,122 +5,117 @@ import (
 )
 
 // ─── Core Identity ────────────────────────────────────────────────────────────
-// Server holds only the minimal fields required to identify and connect to a
-// remote machine. All metadata is stored in child tables keyed by server_id.
 
 type Server struct {
-	ID         uint       `json:"id"`
-	UUID       string     `json:"uuid"`
-	Name       string     `json:"name"`
-	Host       string     `json:"host"`
-	Port       int        `json:"port"`
-	Username   string     `json:"username"`
-	AuthType   string     `json:"auth_type"`   // "key" or "password"
-	AuthSecret string     `json:"auth_secret,omitempty"`
-	Provider   string     `json:"provider"`    // e.g. AWS, DigitalOcean
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	LastSeen   *time.Time `json:"last_seen,omitempty"`
-	IsFavorite bool       `json:"is_favorite"`
-	Tags       []Tag      `json:"tags,omitempty"`
+	ID         uint       `json:"id" bson:"id"`
+	UUID       string     `json:"uuid" bson:"uuid"`
+	Name       string     `json:"name" bson:"name"`
+	Host       string     `json:"host" bson:"host"`
+	Port       int        `json:"port" bson:"port"`
+	Username   string     `json:"username" bson:"username"`
+	AuthType   string     `json:"auth_type" bson:"auth_type"`
+	AuthSecret string     `json:"auth_secret,omitempty" bson:"auth_secret,omitempty"`
+	Provider   string     `json:"provider" bson:"provider"`
+	CreatedAt  time.Time  `json:"created_at" bson:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at" bson:"updated_at"`
+	LastSeen   *time.Time `json:"last_seen,omitempty" bson:"last_seen,omitempty"`
+	IsFavorite bool       `json:"is_favorite" bson:"is_favorite"`
+	Tags       []Tag      `json:"tags,omitempty" bson:"tags,omitempty"`
 }
 
 // ─── Network & Location ───────────────────────────────────────────────────────
 
 type ServerNetwork struct {
-	ID               uint   `json:"id"`
-	ServerID         uint   `json:"server_id"`
-	Hostname         string `json:"hostname"`
-	PublicIP         string `json:"public_ip"`
-	PrivateIP        string `json:"private_ip"`
-	MACAddress       string `json:"mac_address"`
-	Region           string `json:"region"`            // e.g. us-east-1
-	AvailabilityZone string `json:"availability_zone"` // e.g. us-east-1a
+	ID               uint   `json:"id" bson:"id"`
+	ServerID         uint   `json:"server_id" bson:"server_id"`
+	Hostname         string `json:"hostname" bson:"hostname"`
+	PublicIP         string `json:"public_ip" bson:"public_ip"`
+	PrivateIP        string `json:"private_ip" bson:"private_ip"`
+	MACAddress       string `json:"mac_address" bson:"mac_address"`
+	Region           string `json:"region" bson:"region"`
+	AvailabilityZone string `json:"availability_zone" bson:"availability_zone"`
 }
 
 // ─── Hardware & Firmware ──────────────────────────────────────────────────────
 
 type ServerHardware struct {
-	ID             uint   `json:"id"`
-	ServerID       uint   `json:"server_id"`
-	CPUModel       string `json:"cpu_model"`
-	CPUCores       int    `json:"cpu_cores"`
-	RAMTotal       string `json:"ram_total"`
-	SwapTotal      string `json:"swap_total"`
-	DiskTotal      string `json:"disk_total"`
-	Virtualization string `json:"virtualization"` // kvm, xen, none, …
-	InstanceType   string `json:"instance_type"`  // t3.small, n1-standard-1, …
-	SerialNumber   string `json:"serial_number"`
-	BIOSVersion    string `json:"bios_version"`
-	Uptime         string `json:"uptime"`
+	ID             uint   `json:"id" bson:"id"`
+	ServerID       uint   `json:"server_id" bson:"server_id"`
+	CPUModel       string `json:"cpu_model" bson:"cpu_model"`
+	CPUCores       int    `json:"cpu_cores" bson:"cpu_cores"`
+	RAMTotal       string `json:"ram_total" bson:"ram_total"`
+	SwapTotal      string `json:"swap_total" bson:"swap_total"`
+	DiskTotal      string `json:"disk_total" bson:"disk_total"`
+	Virtualization string `json:"virtualization" bson:"virtualization"`
+	InstanceType   string `json:"instance_type" bson:"instance_type"`
+	SerialNumber   string `json:"serial_number" bson:"serial_number"`
+	BIOSVersion    string `json:"bios_version" bson:"bios_version"`
+	Uptime         string `json:"uptime" bson:"uptime"`
 }
 
 // ─── Operating System ─────────────────────────────────────────────────────────
 
 type ServerOS struct {
-	ID             uint   `json:"id"`
-	ServerID       uint   `json:"server_id"`
-	OSFamily       string `json:"os_family"`       // Ubuntu, CentOS, …
-	OSVersion      string `json:"os_version"`      // 22.04, 9, …
-	KernelVersion  string `json:"kernel_version"`
-	Architecture   string `json:"architecture"`    // x86_64, aarch64, …
-	InitSystem     string `json:"init_system"`     // systemd, openrc, …
-	Timezone       string `json:"timezone"`        // UTC, America/New_York, …
-	Locale         string `json:"locale"`          // en_US.UTF-8, …
-	PackageManager string `json:"package_manager"` // apt, dnf, apk, …
+	ID             uint   `json:"id" bson:"id"`
+	ServerID       uint   `json:"server_id" bson:"server_id"`
+	OSFamily       string `json:"os_family" bson:"os_family"`
+	OSVersion      string `json:"os_version" bson:"os_version"`
+	KernelVersion  string `json:"kernel_version" bson:"kernel_version"`
+	Architecture   string `json:"architecture" bson:"architecture"`
+	InitSystem     string `json:"init_system" bson:"init_system"`
+	Timezone       string `json:"timezone" bson:"timezone"`
+	Locale         string `json:"locale" bson:"locale"`
+	PackageManager string `json:"package_manager" bson:"package_manager"`
 }
 
 // ─── Installed Software ───────────────────────────────────────────────────────
 
 type Software struct {
-	ID       uint   `json:"id"`
-	ServerID uint   `json:"server_id"`
-	Name     string `json:"name"`
-	Version  string `json:"version"`
+	ID       uint   `json:"id" bson:"id"`
+	ServerID uint   `json:"server_id" bson:"server_id"`
+	Name     string `json:"name" bson:"name"`
+	Version  string `json:"version" bson:"version"`
 }
 
 // ─── Misc ─────────────────────────────────────────────────────────────────────
 
 type Tag struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID   uint   `json:"id" bson:"id"`
+	Name string `json:"name" bson:"name"`
 }
 
 type ConnectionLog struct {
-	ID           uint       `json:"id"`
-	ServerID     uint       `json:"server_id"`
-	ServerName   string     `json:"server_name"`
-	Username     string     `json:"username"`
-	Host         string     `json:"host"`
-	LoggedInAt   time.Time  `json:"logged_in_at"`
-	LoggedOutAt  *time.Time `json:"logged_out_at,omitempty"`
-	Duration     string     `json:"duration,omitempty"`
-	Status       string     `json:"status"`
-	ErrorMessage string     `json:"error_message,omitempty"`
+	ID           uint       `json:"id" bson:"id"`
+	ServerID     uint       `json:"server_id" bson:"server_id"`
+	ServerName   string     `json:"server_name" bson:"server_name"`
+	Username     string     `json:"username" bson:"username"`
+	Host         string     `json:"host" bson:"host"`
+	LoggedInAt   time.Time  `json:"logged_in_at" bson:"logged_in_at"`
+	LoggedOutAt  *time.Time `json:"logged_out_at,omitempty" bson:"logged_out_at,omitempty"`
+	Duration     string     `json:"duration,omitempty" bson:"duration,omitempty"`
+	Status       string     `json:"status" bson:"status"`
+	ErrorMessage string     `json:"error_message,omitempty" bson:"error_message,omitempty"`
 }
 
 // ─── Joined API View ──────────────────────────────────────────────────────────
-// ServerView is the rich response returned by the API. It is assembled by
-// LEFT JOINing the four child tables onto the servers row.
 
 type ServerView struct {
-	// Core identity
-	ID        uint       `json:"id"`
-	UUID      string     `json:"uuid"`
-	Name      string     `json:"name"`
-	Host      string     `json:"host"`
-	Port      int        `json:"port"`
-	Username  string     `json:"username"`
-	AuthType  string     `json:"auth_type"`
-	Provider  string     `json:"provider"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	LastSeen  *time.Time `json:"last_seen,omitempty"`
-	IsFavorite bool       `json:"is_favorite"`
-	Tags      []Tag      `json:"tags"`
+	ID         uint       `json:"id" bson:"id"`
+	UUID       string     `json:"uuid" bson:"uuid"`
+	Name       string     `json:"name" bson:"name"`
+	Host       string     `json:"host" bson:"host"`
+	Port       int        `json:"port" bson:"port"`
+	Username   string     `json:"username" bson:"username"`
+	AuthType   string     `json:"auth_type" bson:"auth_type"`
+	Provider   string     `json:"provider" bson:"provider"`
+	CreatedAt  time.Time  `json:"created_at" bson:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at" bson:"updated_at"`
+	LastSeen   *time.Time `json:"last_seen,omitempty" bson:"last_seen,omitempty"`
+	IsFavorite bool       `json:"is_favorite" bson:"is_favorite"`
+	Tags       []Tag      `json:"tags" bson:"tags"`
 
-	Network  *ServerNetwork  `json:"network"`
-	Hardware *ServerHardware `json:"hardware"`
-	OS       *ServerOS       `json:"os"`
-	Software []Software      `json:"software"`
+	Network  *ServerNetwork  `json:"network" bson:"network"`
+	Hardware *ServerHardware `json:"hardware" bson:"hardware"`
+	OS       *ServerOS       `json:"os" bson:"os"`
+	Software []Software      `json:"software" bson:"software"`
 }

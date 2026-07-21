@@ -202,7 +202,7 @@ func (a *App) ScanServer(id uint) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("API returned status: %d", resp.StatusCode)
 	}
 	return nil

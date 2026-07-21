@@ -5,6 +5,7 @@ import AddServer from "./components/AddServer";
 import Settings from "./components/Settings";
 import ServerDetail from "./components/ServerDetail";
 import SessionHistory from "./components/SessionHistory";
+import Onboarding from "./components/Onboarding";
 import {
   GetServers,
   GetServer,
@@ -18,6 +19,9 @@ import {
 } from "../wailsjs/go/main/App";
 
 export default function App() {
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    return localStorage.getItem("vpsm_onboarding_completed") !== "true";
+  });
   const [activeTab, setActiveTab] = useState<"servers" | "history" | "add-server" | "settings">("servers");
   const [servers, setServers] = useState<any[]>([]);
   const [selectedServer, setSelectedServer] = useState<any | null>(null);
@@ -28,6 +32,10 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={() => setShowOnboarding(false)} />;
+  }
 
   useEffect(() => {
     fetchServers();
