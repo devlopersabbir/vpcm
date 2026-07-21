@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.1.15] - 2026-07-21
+
+* chore: bump CLI version to v0.1.14 (4b8e625)
+* chore: bump version to v0.1.14 [skip ci] (3f16f63)
+* Merge branch 'dev' (d504ec2)
+* refactor: perform inventory scans in background and update API response to 202 Accepted (3c31992)
+* feat: implement automated software detection and repository persistence for server inventories (d80afb5)
+* feat: add manual refresh capability for server details and logs with improved API error handling and thread-safe configuration loading (317a4b9)
+* feat: implement REST API endpoints and client-side HTTP calls for server management operations (ea5b63f)
+
+
 ## [v0.1.14] - 2026-07-21
 
 * Merge branch 'dev' (d504ec2)
