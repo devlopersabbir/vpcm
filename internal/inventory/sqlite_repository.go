@@ -39,6 +39,7 @@ func (r *sqliteServerRepository) migrate() error {
 		created_at  DATETIME,
 		updated_at  DATETIME,
 		last_seen   DATETIME,
+		is_favorite INTEGER DEFAULT 0,
 		tags        TEXT
 	);
 
@@ -100,7 +101,11 @@ func (r *sqliteServerRepository) migrate() error {
 		status        TEXT NOT NULL,
 		error_message TEXT
 	);`)
-	return err
+	if err != nil {
+		return err
+	}
+	_, _ = r.db.Exec("ALTER TABLE servers ADD COLUMN is_favorite INTEGER DEFAULT 0")
+	return nil
 }
 
 // ─── Core CRUD ────────────────────────────────────────────────────────────────
@@ -115,11 +120,16 @@ func (r *sqliteServerRepository) Create(ctx context.Context, s *Server) error {
 		lastSeen = *s.LastSeen
 	}
 
+	isFavorite := 0
+	if s.IsFavorite {
+		isFavorite = 1
+	}
+
 	res, err := r.db.ExecContext(ctx, `
-	INSERT INTO servers (uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, tags)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	INSERT INTO servers (uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, is_favorite, tags)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.UUID, s.Name, s.Host, s.Port, s.Username, s.AuthType, s.AuthSecret,
-		s.Provider, s.CreatedAt, s.UpdatedAt, lastSeen, string(tagsJSON))
+		s.Provider, s.CreatedAt, s.UpdatedAt, lastSeen, isFavorite, string(tagsJSON))
 	if err != nil {
 		return err
 	}
@@ -132,21 +142,21 @@ func (r *sqliteServerRepository) Create(ctx context.Context, s *Server) error {
 
 func (r *sqliteServerRepository) GetByID(ctx context.Context, id uint) (*Server, error) {
 	row := r.db.QueryRowContext(ctx,
-		`SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, tags
+		`SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, is_favorite, tags
 		 FROM servers WHERE id = ?`, id)
 	return r.scanServer(row)
 }
 
 func (r *sqliteServerRepository) GetByUUID(ctx context.Context, uuid string) (*Server, error) {
 	row := r.db.QueryRowContext(ctx,
-		`SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, tags
+		`SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, is_favorite, tags
 		 FROM servers WHERE uuid = ?`, uuid)
 	return r.scanServer(row)
 }
 
 func (r *sqliteServerRepository) List(ctx context.Context) ([]Server, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, tags
+		`SELECT id, uuid, name, host, port, username, auth_type, auth_secret, provider, created_at, updated_at, last_seen, is_favorite, tags
 		 FROM servers`)
 	if err != nil {
 		return nil, err
@@ -179,10 +189,15 @@ func (r *sqliteServerRepository) Update(ctx context.Context, s *Server) error {
 		lastSeen = *s.LastSeen
 	}
 
+	isFavorite := 0
+	if s.IsFavorite {
+		isFavorite = 1
+	}
+
 	_, err := r.db.ExecContext(ctx, `
-	UPDATE servers SET name = ?, auth_type = ?, auth_secret = ?, provider = ?, updated_at = ?, last_seen = ?, tags = ?
+	UPDATE servers SET name = ?, auth_type = ?, auth_secret = ?, provider = ?, updated_at = ?, last_seen = ?, is_favorite = ?, tags = ?
 	WHERE id = ?`,
-		s.Name, s.AuthType, s.AuthSecret, s.Provider, s.UpdatedAt, lastSeen, string(tagsJSON), s.ID)
+		s.Name, s.AuthType, s.AuthSecret, s.Provider, s.UpdatedAt, lastSeen, isFavorite, string(tagsJSON), s.ID)
 	return err
 }
 
@@ -336,7 +351,7 @@ func (r *sqliteServerRepository) GetSoftware(ctx context.Context, serverID uint)
 const serverViewQuery = `
 SELECT
 	s.id, s.uuid, s.name, s.host, s.port, s.username, s.auth_type, s.provider,
-	s.created_at, s.updated_at, s.last_seen, s.tags,
+	s.created_at, s.updated_at, s.last_seen, s.is_favorite, s.tags,
 	-- network
 	n.id, n.hostname, n.public_ip, n.private_ip, n.mac_address, n.region, n.availability_zone,
 	-- hardware
@@ -497,8 +512,9 @@ func (r *sqliteServerRepository) scanServer(row *sql.Row) (*Server, error) {
 	var s Server
 	var tagsStr sql.NullString
 	var lastSeen sql.NullTime
+	var isFavorite int
 	err := row.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username,
-		&s.AuthType, &s.AuthSecret, &s.Provider, &s.CreatedAt, &s.UpdatedAt, &lastSeen, &tagsStr)
+		&s.AuthType, &s.AuthSecret, &s.Provider, &s.CreatedAt, &s.UpdatedAt, &lastSeen, &isFavorite, &tagsStr)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrServerNotFound
@@ -508,6 +524,7 @@ func (r *sqliteServerRepository) scanServer(row *sql.Row) (*Server, error) {
 	if lastSeen.Valid {
 		s.LastSeen = &lastSeen.Time
 	}
+	s.IsFavorite = (isFavorite != 0)
 	if tagsStr.Valid && tagsStr.String != "" {
 		_ = json.Unmarshal([]byte(tagsStr.String), &s.Tags)
 	}
@@ -521,14 +538,16 @@ func (r *sqliteServerRepository) scanServerRow(rows *sql.Rows) (*Server, error) 
 	var s Server
 	var tagsStr sql.NullString
 	var lastSeen sql.NullTime
+	var isFavorite int
 	err := rows.Scan(&s.ID, &s.UUID, &s.Name, &s.Host, &s.Port, &s.Username,
-		&s.AuthType, &s.AuthSecret, &s.Provider, &s.CreatedAt, &s.UpdatedAt, &lastSeen, &tagsStr)
+		&s.AuthType, &s.AuthSecret, &s.Provider, &s.CreatedAt, &s.UpdatedAt, &lastSeen, &isFavorite, &tagsStr)
 	if err != nil {
 		return nil, err
 	}
 	if lastSeen.Valid {
 		s.LastSeen = &lastSeen.Time
 	}
+	s.IsFavorite = (isFavorite != 0)
 	if tagsStr.Valid && tagsStr.String != "" {
 		_ = json.Unmarshal([]byte(tagsStr.String), &s.Tags)
 	}
@@ -556,9 +575,11 @@ func scanViewColumns(scanner rowScanner) (*ServerView, error) {
 	var oID sql.NullInt64
 	var oFamily, oVersion, oKernel, oArch, oInit, oTZ, oLocale, oPkgMgr sql.NullString
 
+	var isFavorite int
+
 	err := scanner.Scan(
 		&v.ID, &v.UUID, &v.Name, &v.Host, &v.Port, &v.Username, &v.AuthType, &v.Provider,
-		&v.CreatedAt, &v.UpdatedAt, &lastSeen, &tagsStr,
+		&v.CreatedAt, &v.UpdatedAt, &lastSeen, &isFavorite, &tagsStr,
 		// network
 		&nID, &nHostname, &nPublicIP, &nPrivateIP, &nMAC, &nRegion, &nAZ,
 		// hardware
@@ -573,6 +594,7 @@ func scanViewColumns(scanner rowScanner) (*ServerView, error) {
 	if lastSeen.Valid {
 		v.LastSeen = &lastSeen.Time
 	}
+	v.IsFavorite = (isFavorite != 0)
 	if tagsStr.Valid && tagsStr.String != "" {
 		_ = json.Unmarshal([]byte(tagsStr.String), &v.Tags)
 	}

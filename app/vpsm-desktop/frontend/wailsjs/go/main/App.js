@@ -33,3 +33,7 @@ export function SaveConfig(arg1) {
 export function ScanServer(arg1) {
   return window['go']['main']['App']['ScanServer'](arg1);
 }
+
+export function ToggleFavorite(arg1) {
+  return window['go']['main']['App']['ToggleFavorite'](arg1);
+}

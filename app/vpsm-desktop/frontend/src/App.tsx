@@ -13,7 +13,8 @@ import {
   ScanServer,
   GetConfig,
   SaveConfig,
-  GetConnectionHistory
+  GetConnectionHistory,
+  ToggleFavorite
 } from "../wailsjs/go/main/App";
 
 export default function App() {
@@ -122,6 +123,15 @@ export default function App() {
     }
   };
 
+  const handleToggleFavorite = async (id: number) => {
+    try {
+      await ToggleFavorite(id);
+      fetchServers();
+    } catch (err: any) {
+      showStatus("error", "Failed to toggle favorite: " + err);
+    }
+  };
+
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!config) return;
@@ -170,6 +180,7 @@ export default function App() {
             handleScanServer={handleScanServer}
             handleDeleteServer={handleDeleteServer}
             handleSelectServer={handleSelectServer}
+            handleToggleFavorite={handleToggleFavorite}
             setActiveTab={setActiveTab}
           />
         )}

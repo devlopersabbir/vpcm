@@ -122,6 +122,16 @@ func (a *App) ScanServer(id uint) error {
 	return a.service.ScanInventory(a.ctx, id)
 }
 
+// ToggleFavorite switches the favorite state of a server
+func (a *App) ToggleFavorite(id uint) (bool, error) {
+	if a.service == nil {
+		if err := a.initService(); err != nil {
+			return false, err
+		}
+	}
+	return a.service.ToggleFavorite(a.ctx, id)
+}
+
 // GetConfig returns the active settings
 func (a *App) GetConfig() (*config.Config, error) {
 	return config.Load()

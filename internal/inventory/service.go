@@ -111,12 +111,16 @@ func (s *serverService) ReplaceSoftware(ctx context.Context, serverID uint, soft
 // ─── Connection Logs ──────────────────────────────────────────────────────────
 
 func (s *serverService) LogConnectionStart(ctx context.Context, server *Server) (*ConnectionLog, error) {
+	now := time.Now()
+	server.LastSeen = &now
+	_ = s.repo.Update(ctx, server)
+
 	log := &ConnectionLog{
 		ServerID:   server.ID,
 		ServerName: server.Name,
 		Username:   server.Username,
 		Host:       server.Host,
-		LoggedInAt: time.Now(),
+		LoggedInAt: now,
 		Status:     "active",
 	}
 	if err := s.repo.CreateConnectionLog(ctx, log); err != nil {
@@ -140,4 +144,16 @@ func (s *serverService) LogConnectionEnd(ctx context.Context, log *ConnectionLog
 
 func (s *serverService) GetConnectionHistory(ctx context.Context, serverID uint) ([]ConnectionLog, error) {
 	return s.repo.GetConnectionLogs(ctx, serverID)
+}
+
+func (s *serverService) ToggleFavorite(ctx context.Context, id uint) (bool, error) {
+	server, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	server.IsFavorite = !server.IsFavorite
+	if err := s.repo.Update(ctx, server); err != nil {
+		return false, err
+	}
+	return server.IsFavorite, nil
 }

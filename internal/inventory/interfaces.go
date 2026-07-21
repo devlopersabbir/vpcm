@@ -60,4 +60,5 @@ type ServerService interface {
 	LogConnectionStart(ctx context.Context, server *Server) (*ConnectionLog, error)
 	LogConnectionEnd(ctx context.Context, log *ConnectionLog, err error) error
 	GetConnectionHistory(ctx context.Context, serverID uint) ([]ConnectionLog, error)
+	ToggleFavorite(ctx context.Context, id uint) (bool, error)
 }

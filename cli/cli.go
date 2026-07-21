@@ -44,9 +44,14 @@ func init() {
 	serverExportCmd.Flags().StringVarP(&exportOutputFile, "out", "o", "", "Output file path (default: stdout)")
 
 	serverListCmd.Flags().BoolVarP(&interactiveList, "interactive", "i", false, "Open interactive TUI server explorer")
-	listCmd.Flags().BoolVarP(&interactiveList, "interactive", "i", false, "Open interactive TUI server explorer")
+	serverListCmd.Flags().BoolVarP(&listFavorites, "favorites", "f", false, "Filter to only show favorite servers")
+	serverListCmd.Flags().BoolVarP(&listRecents, "recents", "r", false, "List recently connected servers first")
 
-	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd)
+	listCmd.Flags().BoolVarP(&interactiveList, "interactive", "i", false, "Open interactive TUI server explorer")
+	listCmd.Flags().BoolVarP(&listFavorites, "favorites", "f", false, "Filter to only show favorite servers")
+	listCmd.Flags().BoolVarP(&listRecents, "recents", "r", false, "List recently connected servers first")
+
+	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverFavoriteCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd)
 }

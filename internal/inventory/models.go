@@ -21,6 +21,7 @@ type Server struct {
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 	LastSeen   *time.Time `json:"last_seen,omitempty"`
+	IsFavorite bool       `json:"is_favorite"`
 	Tags       []Tag      `json:"tags,omitempty"`
 }
 
@@ -115,6 +116,7 @@ type ServerView struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	LastSeen  *time.Time `json:"last_seen,omitempty"`
+	IsFavorite bool       `json:"is_favorite"`
 	Tags      []Tag      `json:"tags"`
 
 	// Child domains — nil if not yet collected

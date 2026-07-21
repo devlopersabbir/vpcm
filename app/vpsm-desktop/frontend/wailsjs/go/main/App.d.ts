@@ -18,3 +18,5 @@ export function GetServers():Promise<Array<inventory.ServerView>>;
 export function SaveConfig(arg1:config.Config):Promise<void>;
 
 export function ScanServer(arg1:number):Promise<void>;
+
+export function ToggleFavorite(arg1:number):Promise<boolean>;

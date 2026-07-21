@@ -151,7 +151,12 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 			Host:     host,
 			Port:     22,
 			Username: username,
-		}
+		}	}
+
+	if target != nil && target.ID != 0 {
+		now := time.Now()
+		target.LastSeen = &now
+		_ = svc.UpdateServer(cmd.Context(), target)
 	}
 
 	if identityFile != "" {

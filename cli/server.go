@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,9 @@ import (
 	"github.com/devlopersabbir/vpcm/internal/inventory"
 	"github.com/spf13/cobra"
 )
+
+var listFavorites bool
+var listRecents bool
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -61,6 +65,28 @@ var serverListCmd = &cobra.Command{
 			return err
 		}
 
+		if listFavorites {
+			var filtered []inventory.Server
+			for _, s := range servers {
+				if s.IsFavorite {
+					filtered = append(filtered, s)
+				}
+			}
+			servers = filtered
+		}
+
+		if listRecents {
+			sort.Slice(servers, func(i, j int) bool {
+				if servers[i].LastSeen == nil {
+					return false
+				}
+				if servers[j].LastSeen == nil {
+					return true
+				}
+				return servers[i].LastSeen.After(*servers[j].LastSeen)
+			})
+		}
+
 		if interactiveList {
 			selected, err := runTUI(cmd.Context(), servers)
 			if err != nil {
@@ -76,12 +102,55 @@ var serverListCmd = &cobra.Command{
 		re := lipgloss.NewRenderer(os.Stdout)
 		purple := lipgloss.Color("#7D56F4")
 		gray := lipgloss.Color("#3C3C3C")
+		amber := lipgloss.Color("#FBBF24")
+
+		// Print Recently Connected (up to 3 items)
+		var recentItems []inventory.Server
+		for _, s := range servers {
+			if s.LastSeen != nil {
+				recentItems = append(recentItems, s)
+			}
+		}
+		sort.Slice(recentItems, func(i, j int) bool {
+			return recentItems[i].LastSeen.After(*recentItems[j].LastSeen)
+		})
+
+		if len(recentItems) > 0 {
+			limit := len(recentItems)
+			if limit > 3 {
+				limit = 3
+			}
+			var recLines []string
+			for i := 0; i < limit; i++ {
+				s := recentItems[i]
+				timeStr := s.LastSeen.Format("02 Jan 15:04 MST")
+				favStar := " "
+				if s.IsFavorite {
+					favStar = "★"
+				}
+				recLines = append(recLines, fmt.Sprintf(" %s  %-14s  %-10s@%-18s  Seen: %s", favStar, s.Name, s.Username, s.Host, timeStr))
+			}
+
+			boxContent := strings.Join(recLines, "\n")
+			recentBox := re.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(purple).
+				Padding(0, 1).
+				MarginBottom(1)
+
+			fmt.Println(re.NewStyle().Bold(true).Foreground(purple).Render(" 🕒  RECENTLY ACCESSED NODES"))
+			fmt.Println(recentBox.Render(boxContent))
+		}
 
 		var rows [][]string
 		for _, s := range servers {
+			name := s.Name
+			if s.IsFavorite {
+				name = "★ " + name
+			}
 			rows = append(rows, []string{
 				strconv.Itoa(int(s.ID)),
-				s.Name,
+				name,
 				s.Username,
 				s.Host,
 				strconv.Itoa(s.Port),
@@ -91,17 +160,22 @@ var serverListCmd = &cobra.Command{
 		}
 
 		tbl := table.New().
-			Border(lipgloss.NormalBorder()).
+			Border(lipgloss.RoundedBorder()).
 			BorderStyle(re.NewStyle().Foreground(gray)).
 			Headers("ID", "Name", "Username", "Host", "Port", "Auth Type", "Provider").
 			Rows(rows...)
 
 		tbl.StyleFunc(func(row, col int) lipgloss.Style {
 			switch {
-			case row == -1:
+			case row < 0:
 				return re.NewStyle().Bold(true).Foreground(purple).Padding(0, 1)
 			default:
-				return re.NewStyle().Padding(0, 1)
+				s := servers[row]
+				style := re.NewStyle().Padding(0, 1)
+				if s.IsFavorite {
+					return style.Foreground(amber)
+				}
+				return style
 			}
 		})
 
@@ -294,6 +368,66 @@ var serverRenameCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Successfully renamed server '%s' (ID: %d) to '%s'.\n", input, targetID, newName)
+		return nil
+	},
+}
+
+var serverFavoriteCmd = &cobra.Command{
+	Use:   "favorite [id | name]",
+	Short: "Toggle the favorite status of a server",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		input := args[0]
+
+		repo, svc, err := initRepoAndService(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		servers, err := repo.List(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		var targetID uint
+		var found bool
+
+		// Check by ID first
+		if id, err := strconv.ParseUint(input, 10, 32); err == nil {
+			for _, s := range servers {
+				if s.ID == uint(id) {
+					targetID = s.ID
+					found = true
+					break
+				}
+			}
+		}
+
+		// Check by Name
+		if !found {
+			for _, s := range servers {
+				if s.Name == input {
+					targetID = s.ID
+					found = true
+					break
+				}
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("server '%s' not found in database", input)
+		}
+
+		fav, err := svc.ToggleFavorite(cmd.Context(), targetID)
+		if err != nil {
+			return err
+		}
+
+		if fav {
+			fmt.Printf("Server '%s' (ID: %d) is now marked as favorite! ⭐\n", input, targetID)
+		} else {
+			fmt.Printf("Server '%s' (ID: %d) removed from favorites.\n", input, targetID)
+		}
 		return nil
 	},
 }

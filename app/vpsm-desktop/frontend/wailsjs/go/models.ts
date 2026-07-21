@@ -325,6 +325,7 @@ export namespace inventory {
 	    updated_at: any;
 	    // Go type: time
 	    last_seen?: any;
+	    is_favorite: boolean;
 	    tags: Tag[];
 	    network?: ServerNetwork;
 	    hardware?: ServerHardware;
@@ -348,6 +349,7 @@ export namespace inventory {
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
 	        this.last_seen = this.convertValues(source["last_seen"], null);
+	        this.is_favorite = source["is_favorite"];
 	        this.tags = this.convertValues(source["tags"], Tag);
 	        this.network = this.convertValues(source["network"], ServerNetwork);
 	        this.hardware = this.convertValues(source["hardware"], ServerHardware);
