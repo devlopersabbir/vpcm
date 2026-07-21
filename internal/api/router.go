@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -123,11 +124,13 @@ func (s *Server) handleScanServer(c *gin.Context) {
 		return
 	}
 
-	if err := s.inventoryService.ScanInventory(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"status": "scan initiated"})
+	go func() {
+		ctx := context.Background()
+		if err := s.inventoryService.ScanInventory(ctx, uint(id)); err != nil {
+			slog.Error("Background specs scan failed", "server_id", id, "error", err)
+		}
+	}()
+	c.JSON(http.StatusAccepted, gin.H{"status": "scan initiated"})
 }
 
 func (s *Server) handleListNotes(c *gin.Context) {
