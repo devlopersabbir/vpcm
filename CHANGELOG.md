@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.1.16] - 2026-07-22
+
+* chore: update snapcraft promote command syntax and improve revision input description (6bc5e89)
+* chore: bump version to v0.1.16 [skip ci] (dd8f02a)
+* chore: update default database and API host configurations to remote endpoint (73d2279)
+
+
 ## [v0.1.16] - 2026-07-21
 
 * chore: update default database and API host configurations to remote endpoint (73d2279)
