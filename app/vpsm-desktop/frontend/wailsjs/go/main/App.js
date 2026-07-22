@@ -6,6 +6,10 @@ export function AddServer(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['App']['AddServer'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
+export function CloseSSHTerminal(arg1) {
+  return window['go']['main']['App']['CloseSSHTerminal'](arg1);
+}
+
 export function DeleteServer(arg1) {
   return window['go']['main']['App']['DeleteServer'](arg1);
 }
@@ -26,12 +30,24 @@ export function GetServers() {
   return window['go']['main']['App']['GetServers']();
 }
 
+export function ResizeSSHTerminal(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ResizeSSHTerminal'](arg1, arg2, arg3);
+}
+
 export function SaveConfig(arg1) {
   return window['go']['main']['App']['SaveConfig'](arg1);
 }
 
 export function ScanServer(arg1) {
   return window['go']['main']['App']['ScanServer'](arg1);
+}
+
+export function SendSSHTerminalInput(arg1, arg2) {
+  return window['go']['main']['App']['SendSSHTerminalInput'](arg1, arg2);
+}
+
+export function StartSSHTerminal(arg1) {
+  return window['go']['main']['App']['StartSSHTerminal'](arg1);
 }
 
 export function ToggleFavorite(arg1) {

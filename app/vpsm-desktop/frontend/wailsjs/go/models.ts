@@ -379,3 +379,32 @@ export namespace inventory {
 
 }
 
+export namespace main {
+	
+	export class SSHConnectionParams {
+	    host: string;
+	    port: number;
+	    username: string;
+	    auth_type: string;
+	    auth_secret: string;
+	    rows: number;
+	    cols: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SSHConnectionParams(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.host = source["host"];
+	        this.port = source["port"];
+	        this.username = source["username"];
+	        this.auth_type = source["auth_type"];
+	        this.auth_secret = source["auth_secret"];
+	        this.rows = source["rows"];
+	        this.cols = source["cols"];
+	    }
+	}
+
+}
+

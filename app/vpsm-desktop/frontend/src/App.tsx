@@ -6,6 +6,7 @@ import Settings from "./components/Settings";
 import ServerDetail from "./components/ServerDetail";
 import SessionHistory from "./components/SessionHistory";
 import Onboarding from "./components/Onboarding";
+import { TerminalModal } from "./components/TerminalModal";
 import {
   GetServers,
   GetServer,
@@ -25,6 +26,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"servers" | "history" | "add-server" | "settings">("servers");
   const [servers, setServers] = useState<any[]>([]);
   const [selectedServer, setSelectedServer] = useState<any | null>(null);
+  const [activeTerminalServer, setActiveTerminalServer] = useState<any | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
 
@@ -204,6 +206,7 @@ export default function App() {
             handleSelectServer={handleSelectServer}
             handleToggleFavorite={handleToggleFavorite}
             setActiveTab={setActiveTab}
+            onOpenTerminal={(srv) => setActiveTerminalServer(srv)}
           />
         )}
 
@@ -225,8 +228,18 @@ export default function App() {
           setSelectedServer={setSelectedServer}
           logs={logs}
           onRefresh={handleRefreshServer}
+          onOpenTerminal={(srv) => setActiveTerminalServer(srv)}
         />
+
+        {/* SSH Terminal Modal */}
+        {activeTerminalServer && (
+          <TerminalModal
+            server={activeTerminalServer}
+            onClose={() => setActiveTerminalServer(null)}
+          />
+        )}
       </main>
     </div>
   );
 }
+
