@@ -56,35 +56,45 @@ func (a *App) StartSSHTerminal(params SSHConnectionParams) (string, error) {
 	var authMethods []ssh.AuthMethod
 
 	switch params.AuthType {
-	case "password":
-		if params.AuthSecret != "" {
-			authMethods = append(authMethods, ssh.Password(params.AuthSecret))
-		}
 	case "key":
 		if params.AuthSecret != "" {
-			signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret))
-			if err == nil {
+			// Try as raw key string
+			if signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret)); err == nil {
 				authMethods = append(authMethods, ssh.PublicKeys(signer))
+			} else {
+				// Try as key file path
+				if keyBytes, err := os.ReadFile(params.AuthSecret); err == nil {
+					if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
+						authMethods = append(authMethods, ssh.PublicKeys(signer))
+					}
+				}
 			}
 		}
 	case "keyfile":
 		if params.AuthSecret != "" {
-			keyBytes, err := os.ReadFile(params.AuthSecret)
-			if err == nil {
-				signer, err := ssh.ParsePrivateKey(keyBytes)
-				if err == nil {
+			if keyBytes, err := os.ReadFile(params.AuthSecret); err == nil {
+				if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
 					authMethods = append(authMethods, ssh.PublicKeys(signer))
 				}
 			}
 		}
+	case "password":
+		if params.AuthSecret != "" {
+			authMethods = append(authMethods, ssh.Password(params.AuthSecret))
+		}
 	}
 
-	// If explicit secret provided but authType not set, try password
-	if params.AuthSecret != "" && len(authMethods) == 0 {
-		authMethods = append(authMethods, ssh.Password(params.AuthSecret))
+	// Fallback: If AuthSecret provided, test it both as key string/filepath AND password
+	if params.AuthSecret != "" {
 		if signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret)); err == nil {
 			authMethods = append(authMethods, ssh.PublicKeys(signer))
 		}
+		if keyBytes, err := os.ReadFile(params.AuthSecret); err == nil {
+			if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
+				authMethods = append(authMethods, ssh.PublicKeys(signer))
+			}
+		}
+		authMethods = append(authMethods, ssh.Password(params.AuthSecret))
 	}
 
 	// Auto-scan ALL private key files in ~/.ssh/ directory
@@ -92,18 +102,30 @@ func (a *App) StartSSHTerminal(params SSHConnectionParams) (string, error) {
 		sshDir := homeDir + "/.ssh"
 		if entries, err := os.ReadDir(sshDir); err == nil {
 			for _, entry := range entries {
-				if !entry.IsDir() && !entry.Type().IsRegular() {
+				if entry.IsDir() {
 					continue
 				}
 				name := entry.Name()
-				// Ignore known hosts, config, public keys, etc.
-				if name == "known_hosts" || name == "known_hosts.old" || name == "config" || len(name) > 4 && name[len(name)-4:] == ".pub" {
+				// Ignore known hosts, config, public keys, sockets, etc.
+				if name == "known_hosts" || name == "known_hosts.old" || name == "config" || (len(name) > 4 && name[len(name)-4:] == ".pub") {
 					continue
 				}
 				keyPath := sshDir + "/" + name
-				if keyBytes, err := os.ReadFile(keyPath); err == nil {
-					if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
-						authMethods = append(authMethods, ssh.PublicKeys(signer))
+				keyBytes, err := os.ReadFile(keyPath)
+				if err != nil {
+					continue
+				}
+
+				// Attempt unencrypted private key parse
+				signer, err := ssh.ParsePrivateKey(keyBytes)
+				if err == nil {
+					authMethods = append(authMethods, ssh.PublicKeys(signer))
+				} else {
+					// If key is encrypted with passphrase and AuthSecret is provided, try parsing with passphrase
+					if params.AuthSecret != "" {
+						if signerWithPass, err := ssh.ParsePrivateKeyWithPassphrase(keyBytes, []byte(params.AuthSecret)); err == nil {
+							authMethods = append(authMethods, ssh.PublicKeys(signerWithPass))
+						}
 					}
 				}
 			}
@@ -112,7 +134,7 @@ func (a *App) StartSSHTerminal(params SSHConnectionParams) (string, error) {
 
 	// Connect to local SSH Agent if available (SSH_AUTH_SOCK)
 	if agentSock := os.Getenv("SSH_AUTH_SOCK"); agentSock != "" {
-		if agentConn, err := net.Dial("unix", agentSock); err == nil {
+		if agentConn, err := net.DialTimeout("unix", agentSock, 2*time.Second); err == nil {
 			ag := agent.NewClient(agentConn)
 			if signers, err := ag.Signers(); err == nil && len(signers) > 0 {
 				authMethods = append(authMethods, ssh.PublicKeys(signers...))

@@ -107,6 +107,7 @@ type ServerView struct {
 	Port       int        `json:"port" bson:"port"`
 	Username   string     `json:"username" bson:"username"`
 	AuthType   string     `json:"auth_type" bson:"auth_type"`
+	AuthSecret string     `json:"auth_secret,omitempty" bson:"auth_secret,omitempty"`
 	Provider   string     `json:"provider" bson:"provider"`
 	CreatedAt  time.Time  `json:"created_at" bson:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at" bson:"updated_at"`

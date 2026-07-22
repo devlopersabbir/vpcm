@@ -154,19 +154,22 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 			Username: username,
 		}	}
 
+	if identityFile != "" {
+		keyBytes, err := os.ReadFile(identityFile)
+		if err == nil {
+			target.AuthType = "key"
+			target.AuthSecret = string(keyBytes)
+		} else {
+			target.AuthType = "keyfile"
+			target.AuthSecret = identityFile
+		}
+	}
+
+	// Always update database record if existing server found
 	if target != nil && target.ID != 0 {
 		now := time.Now()
 		target.LastSeen = &now
 		_ = svc.UpdateServer(cmd.Context(), target)
-	}
-
-	if identityFile != "" {
-		keyBytes, err := os.ReadFile(identityFile)
-		if err != nil {
-			return fmt.Errorf("failed to read identity file %s: %w", identityFile, err)
-		}
-		target.AuthType = "key"
-		target.AuthSecret = string(keyBytes)
 	}
 
 	cfg, _ := config.Load()

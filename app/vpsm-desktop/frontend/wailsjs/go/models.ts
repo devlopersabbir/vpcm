@@ -318,6 +318,7 @@ export namespace inventory {
 	    port: number;
 	    username: string;
 	    auth_type: string;
+	    auth_secret?: string;
 	    provider: string;
 	    // Go type: time
 	    created_at: any;
@@ -345,6 +346,7 @@ export namespace inventory {
 	        this.port = source["port"];
 	        this.username = source["username"];
 	        this.auth_type = source["auth_type"];
+	        this.auth_secret = source["auth_secret"];
 	        this.provider = source["provider"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
