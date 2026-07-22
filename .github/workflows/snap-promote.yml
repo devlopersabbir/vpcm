@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       revision:
-        description: 'Snapcraft revision number to promote (e.g., 5)'
+        description: 'Snapcraft numeric revision number (e.g., 5, 12 - check snapcraft status/build output)'
         required: true
         type: string
       to_channel:
@@ -30,7 +30,5 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         run: |
-          snapcraft promote vpsm \
-            --revision=${{ github.event.inputs.revision }} \
-            --from-channel=edge \
-            --to-channel=${{ github.event.inputs.to_channel }}
+          snapcraft promote vpsm ${{ github.event.inputs.revision }} ${{ github.event.inputs.to_channel }}
+
