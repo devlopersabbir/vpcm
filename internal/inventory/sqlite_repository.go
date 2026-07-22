@@ -350,7 +350,7 @@ func (r *sqliteServerRepository) GetSoftware(ctx context.Context, serverID uint)
 
 const serverViewQuery = `
 SELECT
-	s.id, s.uuid, s.name, s.host, s.port, s.username, s.auth_type, s.provider,
+	s.id, s.uuid, s.name, s.host, s.port, s.username, s.auth_type, s.auth_secret, s.provider,
 	s.created_at, s.updated_at, s.last_seen, s.is_favorite, s.tags,
 	-- network
 	n.id, n.hostname, n.public_ip, n.private_ip, n.mac_address, n.region, n.availability_zone,
@@ -578,7 +578,7 @@ func scanViewColumns(scanner rowScanner) (*ServerView, error) {
 	var isFavorite int
 
 	err := scanner.Scan(
-		&v.ID, &v.UUID, &v.Name, &v.Host, &v.Port, &v.Username, &v.AuthType, &v.Provider,
+		&v.ID, &v.UUID, &v.Name, &v.Host, &v.Port, &v.Username, &v.AuthType, &v.AuthSecret, &v.Provider,
 		&v.CreatedAt, &v.UpdatedAt, &lastSeen, &isFavorite, &tagsStr,
 		// network
 		&nID, &nHostname, &nPublicIP, &nPrivateIP, &nMAC, &nRegion, &nAZ,

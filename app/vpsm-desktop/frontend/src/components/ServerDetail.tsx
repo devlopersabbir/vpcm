@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Info, Cpu, HardDrive, Network as NetIcon, Code, Clock, X, Tag as TagIcon, Server, Database, Activity, RefreshCw } from "lucide-react";
+import { Info, Cpu, HardDrive, Network as NetIcon, Code, Clock, X, Tag as TagIcon, Server, Database, Activity, RefreshCw, Terminal } from "lucide-react";
 import { maskHost } from "../utils/mask";
 
 interface ServerDetailProps {
@@ -7,9 +7,10 @@ interface ServerDetailProps {
   setSelectedServer: (s: any) => void;
   logs: any[];
   onRefresh: () => Promise<void>;
+  onOpenTerminal: (srv: any) => void;
 }
 
-export default function ServerDetail({ selectedServer, setSelectedServer, logs, onRefresh }: ServerDetailProps) {
+export default function ServerDetail({ selectedServer, setSelectedServer, logs, onRefresh, onOpenTerminal }: ServerDetailProps) {
   const [detailTab, setDetailTab] = useState<"overview" | "hardware" | "os" | "network" | "software" | "logs">("overview");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,18 +42,28 @@ export default function ServerDetail({ selectedServer, setSelectedServer, logs, 
             <h2 className="text-xl font-black text-white mt-2 tracking-tight">{selectedServer.name}</h2>
             <p className="text-slate-500 font-mono text-xs mt-1">{selectedServer.username}@{maskHost(selectedServer.host)}:{selectedServer.port}</p>
           </div>
-          <button
-            onClick={async () => {
-              setRefreshing(true);
-              await onRefresh();
-              setRefreshing(false);
-            }}
-            disabled={refreshing}
-            className="mr-12 p-2 bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-cyan-400 rounded-xl border border-slate-700/50 transition-all duration-200"
-            title="Refresh Server Specs & Logs"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin text-cyan-400" : ""}`} />
-          </button>
+          <div className="mr-12 flex items-center space-x-2">
+            <button
+              onClick={() => onOpenTerminal(selectedServer)}
+              className="px-3 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl font-medium text-xs flex items-center space-x-1.5 transition-all duration-200"
+              title="Open Direct SSH Terminal"
+            >
+              <Terminal className="h-4 w-4" />
+              <span>Launch Terminal</span>
+            </button>
+            <button
+              onClick={async () => {
+                setRefreshing(true);
+                await onRefresh();
+                setRefreshing(false);
+              }}
+              disabled={refreshing}
+              className="p-2 bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-cyan-400 rounded-xl border border-slate-700/50 transition-all duration-200"
+              title="Refresh Server Specs & Logs"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin text-cyan-400" : ""}`} />
+            </button>
+          </div>
         </div>
 
         {/* Tab Controls */}

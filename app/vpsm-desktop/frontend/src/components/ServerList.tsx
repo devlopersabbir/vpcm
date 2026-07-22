@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Server, Search, RefreshCw, Trash2, HardDrive, Star, Clock, Key, Shield, ChevronRight, Activity } from "lucide-react";
+import { Server, Search, RefreshCw, Trash2, HardDrive, Star, Clock, Key, Shield, ChevronRight, Activity, Terminal } from "lucide-react";
 import { maskHost } from "../utils/mask";
 
 interface ServerView {
@@ -38,6 +38,7 @@ interface ServerListProps {
   handleSelectServer: (s: ServerView) => void;
   handleToggleFavorite: (id: number) => void;
   setActiveTab: (tab: "servers" | "history" | "add-server" | "settings") => void;
+  onOpenTerminal: (srv: ServerView) => void;
 }
 
 export default function ServerList({
@@ -51,7 +52,8 @@ export default function ServerList({
   handleDeleteServer,
   handleSelectServer,
   handleToggleFavorite,
-  setActiveTab
+  setActiveTab,
+  onOpenTerminal,
 }: ServerListProps) {
   const [filterTab, setFilterTab] = useState<"all" | "favorites" | "recents">("all");
 
@@ -241,6 +243,16 @@ export default function ServerList({
                         {s.provider || "Generic VPS"}
                       </span>
                       <div className="flex items-center space-x-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenTerminal(s);
+                          }}
+                          className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition-colors"
+                          title="Open SSH Terminal"
+                        >
+                          <Terminal className="h-3.5 w-3.5" />
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
