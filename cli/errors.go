@@ -19,22 +19,11 @@ var (
 			Bold(true).
 			Foreground(lipgloss.Color("#F87171")) // Soft Red / Rose
 
-	errPathStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FDE047")) // Yellow highlight for key paths
-
 	errHintStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#94A3B8")) // Slate / Muted
-
-	errBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#EF4444")).
-			Padding(0, 1).
-			MarginTop(1).
-			MarginBottom(1)
 )
 
-// PrintError formats and outputs a highlighted error box to stderr.
+// PrintError formats and outputs a highlighted error to stderr.
 func PrintError(err error) {
 	if err == nil {
 		return
@@ -71,5 +60,5 @@ func PrintError(err error) {
 		lines = append(lines, errHintStyle.Render("   • Use --help to view available command options and usage flags."))
 	}
 
-	fmt.Fprintln(os.Stderr, errBoxStyle.Render(strings.Join(lines, "\n")))
+	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
 }
