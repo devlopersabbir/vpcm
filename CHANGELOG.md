@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.1.3] - 2026-07-23
+
+* Updated (a16db02)
+* chore: revert CLI version to v1.1.2 (2a7b9ba)
+
+
 ## [v1.1.2] - 2026-07-23
 
 - feat: add custom terminal setup screen with live aesthetic preview and split-screen controls
