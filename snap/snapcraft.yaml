@@ -13,12 +13,6 @@ website: https://github.com/devlopersabbir/vpcm
 icon: snap/gui/icon.png
 type: app
 
-# Snapcraft store category & subcategory
-# See: https://snapcraft.io/docs/supported-snap-categories
-categories:
-  - development
-  - utilities
-
 description: |
   VPSM is an open-source, local-first VPS management suite for engineers who need a fast,
   private, and scriptable way to manage their Linux server fleet. Built entirely in Go with
