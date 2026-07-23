@@ -34,6 +34,10 @@ export function GetTerminalInitialParams() {
   return window['go']['main']['App']['GetTerminalInitialParams']();
 }
 
+export function GetTerminalPreference() {
+  return window['go']['main']['App']['GetTerminalPreference']();
+}
+
 export function OpenStandaloneTerminalWindow(arg1, arg2) {
   return window['go']['main']['App']['OpenStandaloneTerminalWindow'](arg1, arg2);
 }
@@ -44,6 +48,10 @@ export function ResizeSSHTerminal(arg1, arg2, arg3) {
 
 export function SaveConfig(arg1) {
   return window['go']['main']['App']['SaveConfig'](arg1);
+}
+
+export function SaveTerminalPreference(arg1) {
+  return window['go']['main']['App']['SaveTerminalPreference'](arg1);
 }
 
 export function ScanServer(arg1) {

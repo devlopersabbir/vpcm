@@ -224,3 +224,11 @@ func (s *serverService) ToggleFavorite(ctx context.Context, id uint) (bool, erro
 	}
 	return server.IsFavorite, nil
 }
+
+func (s *serverService) GetTerminalPreference(ctx context.Context) (*TerminalPreference, error) {
+	return s.repo.GetTerminalPreference(ctx)
+}
+
+func (s *serverService) SaveTerminalPreference(ctx context.Context, pref *TerminalPreference) error {
+	return s.repo.SaveTerminalPreference(ctx, pref)
+}

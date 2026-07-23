@@ -29,6 +29,8 @@ declare global {
           CloseSSHTerminal: (sessionId: string) => Promise<void>;
           OpenStandaloneTerminalWindow?: (serverID: number, params: any) => Promise<void>;
           GetTerminalInitialParams?: () => Promise<any>;
+          GetTerminalPreference?: () => Promise<any>;
+          SaveTerminalPreference?: (pref: any) => Promise<void>;
         };
       };
     };
@@ -135,17 +137,61 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, i
     }
   };
 
+  const [pref, setPref] = useState<{
+    fontSize: number;
+    fontFamily: string;
+    background: string;
+    foreground: string;
+    opacity: number;
+    blur: number;
+    cursorStyle: 'block' | 'underline' | 'bar';
+    cursorBlink: boolean;
+  }>({
+    fontSize: 14,
+    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    background: '#0d1117',
+    foreground: '#c9d1d9',
+    opacity: 0.85,
+    blur: 12,
+    cursorStyle: 'block',
+    cursorBlink: true,
+  });
+
+  // Fetch terminal preferences on mount
+  useEffect(() => {
+    if (window.go?.main?.App?.GetTerminalPreference) {
+      window.go.main.App.GetTerminalPreference()
+        .then((p) => {
+          if (p) {
+            setPref({
+              fontSize: p.font_size || 14,
+              fontFamily: p.font_family || 'Menlo, Monaco, "Courier New", monospace',
+              background: p.background || '#0d1117',
+              foreground: p.foreground || '#c9d1d9',
+              opacity: p.opacity !== undefined ? p.opacity : 0.85,
+              blur: p.blur !== undefined ? p.blur : 12,
+              cursorStyle: p.cursor_style || 'block',
+              cursorBlink: p.cursor_blink !== undefined ? p.cursor_blink : true,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   useEffect(() => {
     if (!terminalRef.current) return;
 
-    // Initialize xterm.js
+    // Initialize xterm.js with translucent theme
     const term = new Terminal({
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      cursorBlink: pref.cursorBlink,
+      cursorStyle: pref.cursorStyle,
+      fontSize: pref.fontSize,
+      fontFamily: pref.fontFamily,
+      allowTransparency: true,
       theme: {
-        background: '#0d1117',
-        foreground: '#c9d1d9',
+        background: 'transparent',
+        foreground: pref.foreground,
         cursor: '#58a6ff',
         selectionBackground: '#264f78',
         black: '#484f58',
@@ -234,7 +280,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, i
       }
       term.dispose();
     };
-  }, []);
+  }, [pref]);
 
   const handleDisconnect = () => {
     if (sessionIdRef.current && window.go?.main?.App) {
@@ -280,7 +326,14 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, i
 
   if (isStandaloneWindow) {
     return (
-      <div className="w-screen h-screen bg-[#0d1117] p-0 m-0 overflow-hidden relative">
+      <div
+        className="w-screen h-screen p-0 m-0 overflow-hidden relative"
+        style={{
+          backgroundColor: `rgba(13, 17, 23, ${pref.opacity})`,
+          backdropFilter: `blur(${pref.blur}px)`,
+          WebkitBackdropFilter: `blur(${pref.blur}px)`,
+        }}
+      >
         {status === 'error' && errorMessage && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 bg-red-500/20 border border-red-500/40 text-red-300 rounded-md text-xs font-mono flex items-center gap-2 shadow-lg">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />

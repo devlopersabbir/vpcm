@@ -37,6 +37,10 @@ type ServerRepository interface {
 	CreateConnectionLog(ctx context.Context, log *ConnectionLog) error
 	UpdateConnectionLog(ctx context.Context, log *ConnectionLog) error
 	GetConnectionLogs(ctx context.Context, serverID uint) ([]ConnectionLog, error)
+
+	// Terminal Preferences
+	GetTerminalPreference(ctx context.Context) (*TerminalPreference, error)
+	SaveTerminalPreference(ctx context.Context, pref *TerminalPreference) error
 }
 
 // ServerService is the application-level contract consumed by CLI and API.
@@ -55,6 +59,10 @@ type ServerService interface {
 	UpsertServerHardware(ctx context.Context, h *ServerHardware) error
 	UpsertServerOS(ctx context.Context, o *ServerOS) error
 	ReplaceSoftware(ctx context.Context, serverID uint, software []Software) error
+
+	// Terminal Preferences
+	GetTerminalPreference(ctx context.Context) (*TerminalPreference, error)
+	SaveTerminalPreference(ctx context.Context, pref *TerminalPreference) error
 
 	// Connection tracking
 	LogConnectionStart(ctx context.Context, server *Server) (*ConnectionLog, error)

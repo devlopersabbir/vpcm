@@ -261,6 +261,63 @@ func (a *App) SaveConfig(cfg config.Config) error {
 	return config.Save(&cfg)
 }
 
+// GetTerminalPreference fetches terminal preference from REST API
+func (a *App) GetTerminalPreference() (*inventory.TerminalPreference, error) {
+	url := fmt.Sprintf("%s/terminal/preferences", a.getAPIURL())
+	ctx, cancel := context.WithTimeout(a.ctx, 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
+	var pref inventory.TerminalPreference
+	if err := json.NewDecoder(resp.Body).Decode(&pref); err != nil {
+		return nil, err
+	}
+	return &pref, nil
+}
+
+// SaveTerminalPreference updates terminal preference via REST API
+func (a *App) SaveTerminalPreference(pref inventory.TerminalPreference) error {
+	url := fmt.Sprintf("%s/terminal/preferences", a.getAPIURL())
+	ctx, cancel := context.WithTimeout(a.ctx, 5*time.Second)
+	defer cancel()
+
+	bodyBytes, err := json.Marshal(pref)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
 // OpenStandaloneTerminalWindow spawns an independent native application window containing our custom terminal
 func (a *App) OpenStandaloneTerminalWindow(serverID uint, params SSHConnectionParams) error {
 	execPath, err := os.Executable()

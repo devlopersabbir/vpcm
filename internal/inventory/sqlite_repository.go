@@ -91,7 +91,7 @@ func (r *sqliteServerRepository) migrate() error {
 
 	CREATE TABLE IF NOT EXISTS connection_logs (
 		id            INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id     INTEGER,
+		server_id     INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
 		server_name   TEXT NOT NULL,
 		username      TEXT NOT NULL,
 		host          TEXT NOT NULL,
@@ -100,6 +100,19 @@ func (r *sqliteServerRepository) migrate() error {
 		duration      TEXT,
 		status        TEXT NOT NULL,
 		error_message TEXT
+	);
+
+	CREATE TABLE IF NOT EXISTS terminal_preferences (
+		id           INTEGER PRIMARY KEY CHECK (id = 1),
+		font_size    INTEGER DEFAULT 14,
+		font_family  TEXT DEFAULT 'Menlo, Monaco, "Courier New", monospace',
+		background   TEXT DEFAULT '#0d1117',
+		foreground   TEXT DEFAULT '#c9d1d9',
+		opacity      REAL DEFAULT 0.85,
+		blur         INTEGER DEFAULT 12,
+		cursor_style TEXT DEFAULT 'block',
+		cursor_blink INTEGER DEFAULT 1,
+		updated_at   DATETIME
 	);`)
 	if err != nil {
 		return err
@@ -659,4 +672,65 @@ func (r *sqliteServerRepository) scanView(row *sql.Row) (*ServerView, error) {
 
 func (r *sqliteServerRepository) scanViewRow(rows *sql.Rows) (*ServerView, error) {
 	return scanViewColumns(rows)
+}
+
+func (r *sqliteServerRepository) GetTerminalPreference(ctx context.Context) (*TerminalPreference, error) {
+	row := r.db.QueryRowContext(ctx, `
+	SELECT id, font_size, font_family, background, foreground, opacity, blur, cursor_style, cursor_blink, updated_at
+	FROM terminal_preferences WHERE id = 1`)
+
+	var p TerminalPreference
+	var blink int
+	var updatedAt sql.NullTime
+
+	err := row.Scan(&p.ID, &p.FontSize, &p.FontFamily, &p.Background, &p.Foreground, &p.Opacity, &p.Blur, &p.CursorStyle, &blink, &updatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Return default preference
+			return &TerminalPreference{
+				ID:          1,
+				FontSize:    14,
+				FontFamily:  "Menlo, Monaco, \"Courier New\", monospace",
+				Background:  "#0d1117",
+				Foreground:  "#c9d1d9",
+				Opacity:     0.85,
+				Blur:        12,
+				CursorStyle: "block",
+				CursorBlink: true,
+			}, nil
+		}
+		return nil, err
+	}
+
+	p.CursorBlink = blink == 1
+	if updatedAt.Valid {
+		p.UpdatedAt = updatedAt.Time
+	}
+	return &p, nil
+}
+
+func (r *sqliteServerRepository) SaveTerminalPreference(ctx context.Context, p *TerminalPreference) error {
+	p.ID = 1
+	p.UpdatedAt = time.Now()
+	blink := 0
+	if p.CursorBlink {
+		blink = 1
+	}
+
+	_, err := r.db.ExecContext(ctx, `
+	INSERT INTO terminal_preferences (id, font_size, font_family, background, foreground, opacity, blur, cursor_style, cursor_blink, updated_at)
+	VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(id) DO UPDATE SET
+		font_size    = excluded.font_size,
+		font_family  = excluded.font_family,
+		background   = excluded.background,
+		foreground   = excluded.foreground,
+		opacity      = excluded.opacity,
+		blur         = excluded.blur,
+		cursor_style = excluded.cursor_style,
+		cursor_blink = excluded.cursor_blink,
+		updated_at   = excluded.updated_at`,
+		p.FontSize, p.FontFamily, p.Background, p.Foreground, p.Opacity, p.Blur, p.CursorStyle, blink, p.UpdatedAt)
+
+	return err
 }

@@ -51,6 +51,9 @@ func (s *Server) setupRoutes() {
 
 	s.router.GET("/notes", s.handleListNotes)
 	s.router.GET("/events", s.handleListEvents)
+
+	s.router.GET("/terminal/preferences", s.handleGetTerminalPreferences)
+	s.router.POST("/terminal/preferences", s.handleSaveTerminalPreferences)
 }
 
 func (s *Server) Start(host string, port int) error {
@@ -210,6 +213,28 @@ func (s *Server) handleGetConnectionHistory(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, history)
+}
+
+func (s *Server) handleGetTerminalPreferences(c *gin.Context) {
+	pref, err := s.inventoryService.GetTerminalPreference(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pref)
+}
+
+func (s *Server) handleSaveTerminalPreferences(c *gin.Context) {
+	var pref inventory.TerminalPreference
+	if err := c.ShouldBindJSON(&pref); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := s.inventoryService.SaveTerminalPreference(c.Request.Context(), &pref); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pref)
 }
 
 func LoggerMiddleware() gin.HandlerFunc {

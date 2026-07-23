@@ -326,3 +326,33 @@ func (r *mongoServerRepository) GetConnectionLogs(ctx context.Context, serverID 
 	}
 	return logs, nil
 }
+
+func (r *mongoServerRepository) GetTerminalPreference(ctx context.Context) (*TerminalPreference, error) {
+	var pref TerminalPreference
+	err := r.db.Collection("terminal_preferences").FindOne(ctx, bson.M{"id": 1}).Decode(&pref)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return &TerminalPreference{
+				ID:          1,
+				FontSize:    14,
+				FontFamily:  "Menlo, Monaco, \"Courier New\", monospace",
+				Background:  "#0d1117",
+				Foreground:  "#c9d1d9",
+				Opacity:     0.85,
+				Blur:        12,
+				CursorStyle: "block",
+				CursorBlink: true,
+			}, nil
+		}
+		return nil, err
+	}
+	return &pref, nil
+}
+
+func (r *mongoServerRepository) SaveTerminalPreference(ctx context.Context, pref *TerminalPreference) error {
+	pref.ID = 1
+	pref.UpdatedAt = time.Now()
+	opts := options.Replace().SetUpsert(true)
+	_, err := r.db.Collection("terminal_preferences").ReplaceOne(ctx, bson.M{"id": 1}, pref, opts)
+	return err
+}

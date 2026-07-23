@@ -20,11 +20,15 @@ export function GetServers():Promise<Array<inventory.ServerView>>;
 
 export function GetTerminalInitialParams():Promise<Record<string, any>>;
 
+export function GetTerminalPreference():Promise<inventory.TerminalPreference>;
+
 export function OpenStandaloneTerminalWindow(arg1:number,arg2:main.SSHConnectionParams):Promise<void>;
 
 export function ResizeSSHTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
 
 export function SaveConfig(arg1:config.Config):Promise<void>;
+
+export function SaveTerminalPreference(arg1:inventory.TerminalPreference):Promise<void>;
 
 export function ScanServer(arg1:number):Promise<void>;
 
