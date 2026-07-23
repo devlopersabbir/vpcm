@@ -2,6 +2,14 @@
 
 ## [v1.1.2] - 2026-07-23
 
+* feat: add --yes flag to snapcraft promote commands in workflow (9f0435f)
+* fix: enforce numeric revision validation for snap promotion and update input documentation (9b53411)
+* fix: update snapcraft promote workflow syntax to always include --from-channel (dbd44ba)
+* feat: update snap-promote workflow to require source channel and include it in promotion command while adding banner asset (1f96f9c)
+
+
+## [v1.1.2] - 2026-07-23
+
 * chore: revert CLI version to v1.1.1 (2973e62)
 
 
