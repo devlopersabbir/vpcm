@@ -58,6 +58,17 @@ func main() {
 		}
 		width = 900
 		height = 600
+
+		// Load custom window dimensions from stored preferences if available
+		if pref, err := app.GetTerminalPreference(); err == nil && pref != nil {
+			if pref.WindowWidth > 0 {
+				width = pref.WindowWidth
+			}
+			if pref.WindowHeight > 0 {
+				height = pref.WindowHeight
+			}
+		}
+
 		app.isTerminalOnly = true
 		app.terminalServerID = termServerID
 		app.terminalParams = SSHConnectionParams{

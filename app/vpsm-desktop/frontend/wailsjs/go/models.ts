@@ -387,6 +387,8 @@ export namespace inventory {
 	    foreground: string;
 	    opacity: number;
 	    blur: number;
+	    window_width: number;
+	    window_height: number;
 	    cursor_style: string;
 	    cursor_blink: boolean;
 	    // Go type: time
@@ -405,6 +407,8 @@ export namespace inventory {
 	        this.foreground = source["foreground"];
 	        this.opacity = source["opacity"];
 	        this.blur = source["blur"];
+	        this.window_width = source["window_width"];
+	        this.window_height = source["window_height"];
 	        this.cursor_style = source["cursor_style"];
 	        this.cursor_blink = source["cursor_blink"];
 	        this.updated_at = this.convertValues(source["updated_at"], null);

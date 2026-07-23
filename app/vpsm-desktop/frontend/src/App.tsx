@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import ServerList from "./components/ServerList";
 import AddServer from "./components/AddServer";
 import Settings from "./components/Settings";
+import TerminalSetup from "./components/TerminalSetup";
 import ServerDetail from "./components/ServerDetail";
 import SessionHistory from "./components/SessionHistory";
 import Onboarding from "./components/Onboarding";
@@ -24,7 +25,7 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     return localStorage.getItem("vpsm_onboarding_completed") !== "true";
   });
-  const [activeTab, setActiveTab] = useState<"servers" | "history" | "add-server" | "settings">("servers");
+  const [activeTab, setActiveTab] = useState<"servers" | "history" | "add-server" | "terminal" | "settings">("servers");
   const [servers, setServers] = useState<any[]>([]);
   const [selectedServer, setSelectedServer] = useState<any | null>(null);
   const [activeTerminalServer, setActiveTerminalServer] = useState<any | null>(null);
@@ -251,6 +252,8 @@ export default function App() {
         {activeTab === "add-server" && <AddServer onAdd={handleAddServer} />}
 
         {activeTab === "history" && <SessionHistory />}
+
+        {activeTab === "terminal" && <TerminalSetup />}
 
         {activeTab === "settings" && (
           <Settings

@@ -124,14 +124,16 @@ type ServerView struct {
 // ─── Terminal Preference ──────────────────────────────────────────────────────
 
 type TerminalPreference struct {
-	ID             uint    `json:"id" bson:"id"`
-	FontSize       int     `json:"font_size" bson:"font_size"`
-	FontFamily     string  `json:"font_family" bson:"font_family"`
-	Background     string  `json:"background" bson:"background"`
-	Foreground     string  `json:"foreground" bson:"foreground"`
-	Opacity        float64 `json:"opacity" bson:"opacity"`
-	Blur           int     `json:"blur" bson:"blur"`
-	CursorStyle    string  `json:"cursor_style" bson:"cursor_style"`
-	CursorBlink    bool    `json:"cursor_blink" bson:"cursor_blink"`
+	ID             uint      `json:"id" bson:"id"`
+	FontSize       int       `json:"font_size" bson:"font_size"`
+	FontFamily     string    `json:"font_family" bson:"font_family"`
+	Background     string    `json:"background" bson:"background"`
+	Foreground     string    `json:"foreground" bson:"foreground"`
+	Opacity        float64   `json:"opacity" bson:"opacity"`
+	Blur           int       `json:"blur" bson:"blur"`
+	WindowWidth    int       `json:"window_width" bson:"window_width"`
+	WindowHeight   int       `json:"window_height" bson:"window_height"`
+	CursorStyle    string    `json:"cursor_style" bson:"cursor_style"`
+	CursorBlink    bool      `json:"cursor_blink" bson:"cursor_blink"`
 	UpdatedAt      time.Time `json:"updated_at" bson:"updated_at"`
 }

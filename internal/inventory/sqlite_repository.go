@@ -103,16 +103,18 @@ func (r *sqliteServerRepository) migrate() error {
 	);
 
 	CREATE TABLE IF NOT EXISTS terminal_preferences (
-		id           INTEGER PRIMARY KEY CHECK (id = 1),
-		font_size    INTEGER DEFAULT 14,
-		font_family  TEXT DEFAULT 'Menlo, Monaco, "Courier New", monospace',
-		background   TEXT DEFAULT '#0d1117',
-		foreground   TEXT DEFAULT '#c9d1d9',
-		opacity      REAL DEFAULT 0.85,
-		blur         INTEGER DEFAULT 12,
-		cursor_style TEXT DEFAULT 'block',
-		cursor_blink INTEGER DEFAULT 1,
-		updated_at   DATETIME
+		id            INTEGER PRIMARY KEY CHECK (id = 1),
+		font_size     INTEGER DEFAULT 14,
+		font_family   TEXT DEFAULT 'Menlo, Monaco, "Courier New", monospace',
+		background    TEXT DEFAULT '#0d1117',
+		foreground    TEXT DEFAULT '#c9d1d9',
+		opacity       REAL DEFAULT 0.85,
+		blur          INTEGER DEFAULT 12,
+		window_width  INTEGER DEFAULT 900,
+		window_height INTEGER DEFAULT 600,
+		cursor_style  TEXT DEFAULT 'block',
+		cursor_blink  INTEGER DEFAULT 1,
+		updated_at    DATETIME
 	);`)
 	if err != nil {
 		return err
@@ -676,27 +678,29 @@ func (r *sqliteServerRepository) scanViewRow(rows *sql.Rows) (*ServerView, error
 
 func (r *sqliteServerRepository) GetTerminalPreference(ctx context.Context) (*TerminalPreference, error) {
 	row := r.db.QueryRowContext(ctx, `
-	SELECT id, font_size, font_family, background, foreground, opacity, blur, cursor_style, cursor_blink, updated_at
+	SELECT id, font_size, font_family, background, foreground, opacity, blur, window_width, window_height, cursor_style, cursor_blink, updated_at
 	FROM terminal_preferences WHERE id = 1`)
 
 	var p TerminalPreference
 	var blink int
 	var updatedAt sql.NullTime
 
-	err := row.Scan(&p.ID, &p.FontSize, &p.FontFamily, &p.Background, &p.Foreground, &p.Opacity, &p.Blur, &p.CursorStyle, &blink, &updatedAt)
+	err := row.Scan(&p.ID, &p.FontSize, &p.FontFamily, &p.Background, &p.Foreground, &p.Opacity, &p.Blur, &p.WindowWidth, &p.WindowHeight, &p.CursorStyle, &blink, &updatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Return default preference
 			return &TerminalPreference{
-				ID:          1,
-				FontSize:    14,
-				FontFamily:  "Menlo, Monaco, \"Courier New\", monospace",
-				Background:  "#0d1117",
-				Foreground:  "#c9d1d9",
-				Opacity:     0.85,
-				Blur:        12,
-				CursorStyle: "block",
-				CursorBlink: true,
+				ID:           1,
+				FontSize:     14,
+				FontFamily:   "Menlo, Monaco, \"Courier New\", monospace",
+				Background:   "#0d1117",
+				Foreground:   "#c9d1d9",
+				Opacity:      0.85,
+				Blur:         12,
+				WindowWidth:  900,
+				WindowHeight: 600,
+				CursorStyle:  "block",
+				CursorBlink:  true,
 			}, nil
 		}
 		return nil, err
@@ -717,20 +721,29 @@ func (r *sqliteServerRepository) SaveTerminalPreference(ctx context.Context, p *
 		blink = 1
 	}
 
+	if p.WindowWidth <= 0 {
+		p.WindowWidth = 900
+	}
+	if p.WindowHeight <= 0 {
+		p.WindowHeight = 600
+	}
+
 	_, err := r.db.ExecContext(ctx, `
-	INSERT INTO terminal_preferences (id, font_size, font_family, background, foreground, opacity, blur, cursor_style, cursor_blink, updated_at)
-	VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO terminal_preferences (id, font_size, font_family, background, foreground, opacity, blur, window_width, window_height, cursor_style, cursor_blink, updated_at)
+	VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
-		font_size    = excluded.font_size,
-		font_family  = excluded.font_family,
-		background   = excluded.background,
-		foreground   = excluded.foreground,
-		opacity      = excluded.opacity,
-		blur         = excluded.blur,
-		cursor_style = excluded.cursor_style,
-		cursor_blink = excluded.cursor_blink,
-		updated_at   = excluded.updated_at`,
-		p.FontSize, p.FontFamily, p.Background, p.Foreground, p.Opacity, p.Blur, p.CursorStyle, blink, p.UpdatedAt)
+		font_size     = excluded.font_size,
+		font_family   = excluded.font_family,
+		background    = excluded.background,
+		foreground    = excluded.foreground,
+		opacity       = excluded.opacity,
+		blur          = excluded.blur,
+		window_width  = excluded.window_width,
+		window_height = excluded.window_height,
+		cursor_style  = excluded.cursor_style,
+		cursor_blink  = excluded.cursor_blink,
+		updated_at    = excluded.updated_at`,
+		p.FontSize, p.FontFamily, p.Background, p.Foreground, p.Opacity, p.Blur, p.WindowWidth, p.WindowHeight, p.CursorStyle, blink, p.UpdatedAt)
 
 	return err
 }
