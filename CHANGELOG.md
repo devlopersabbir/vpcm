@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.2.2] - 2026-07-23
+
+* feat: update snap-promote workflow to support channel-based promotion in addition to revision-based promotion (60f9ecf)
+* chore: bump CLI version to v1.2.1 (19926cd)
+* chore: bump application, CLI, and API versions to v1.2.0 and implement custom macOS application menu (19c2e49)
+* feat: add terminal setup component and refactor database configuration UI settings (e98ee7a)
+* feat: implement customizable terminal visual preferences with database persistence and UI integration (5828a9a)
+* feat: implement terminal font zooming and fullscreen toggle via native application menu (10c53f2)
+* feat: enhance server inventory dashboard with advanced filtering, layout modes, and quick-copy functionality (ac21675)
+
+
 ## [v1.2.0] - 2026-07-23
 
 * feat: add custom terminal setup screen with live aesthetic preview and split-screen controls
