@@ -17,7 +17,7 @@ on:
           - beta
           - stable
       revision:
-        description: 'Snapcraft numeric revision number (optional, leave BLANK to promote latest build)'
+        description: 'Numeric revision number ONLY (e.g., 5 or 12). Do NOT enter version strings like v0.1.15.'
         required: false
         type: string
 
@@ -39,10 +39,11 @@ jobs:
           TO="${{ github.event.inputs.to_channel }}"
           REV="${{ github.event.inputs.revision }}"
           
-          if [ -n "$REV" ]; then
-            echo "Promoting specific revision $REV from $FROM to $TO..."
+          # Validate if REV is a purely numeric integer (e.g. 5, 12)
+          if [[ "$REV" =~ ^[0-9]+$ ]]; then
+            echo "Promoting numeric revision $REV from $FROM to $TO..."
             snapcraft promote vpsm --revision="$REV" --from-channel="$FROM" --to-channel="$TO"
           else
-            echo "Promoting channel $FROM to $TO..."
+            echo "No numeric revision provided or version tag entered ($REV). Promoting latest build from channel $FROM to $TO..."
             snapcraft promote vpsm --from-channel="$FROM" --to-channel="$TO"
           fi
