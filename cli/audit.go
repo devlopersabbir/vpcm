@@ -81,11 +81,7 @@ Examples:
 
 		sshSvc := internalssh.NewService(20 * time.Second)
 		var client internalssh.Client
-		if server.AuthType == "key" {
-			client, err = sshSvc.Connect(ctx, server.Host, server.Port, server.Username, "key", server.AuthSecret)
-		} else {
-			client, err = sshSvc.Connect(ctx, server.Host, server.Port, server.Username, "password", server.AuthSecret)
-		}
+		client, err = sshSvc.Connect(ctx, server.Host, server.Port, server.Username, server.AuthType, server.AuthSecret)
 		if err != nil {
 			auditPrint(auditStyleError, "error", "SSH connection failed: "+err.Error())
 			return err

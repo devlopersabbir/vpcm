@@ -29,10 +29,25 @@ type realSSHClient struct {
 func (s *sshService) Connect(ctx context.Context, host string, port int, username string, authType string, authSecret string) (Client, error) {
 	var authMethod ssh.AuthMethod
 
-	if authType == "key" {
-		signer, err := ssh.ParsePrivateKey([]byte(authSecret))
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
+	if authType == "key" || authType == "keyfile" {
+		var signer ssh.Signer
+		var parseErr error
+
+		if len(authSecret) > 0 {
+			signer, parseErr = ssh.ParsePrivateKey([]byte(authSecret))
+		}
+
+		if parseErr != nil || signer == nil {
+			keyBytes, readErr := os.ReadFile(authSecret)
+			if readErr == nil {
+				signer, parseErr = ssh.ParsePrivateKey(keyBytes)
+			} else if parseErr == nil {
+				parseErr = readErr
+			}
+		}
+
+		if parseErr != nil || signer == nil {
+			return nil, fmt.Errorf("failed to parse private key: %w", parseErr)
 		}
 		authMethod = ssh.PublicKeys(signer)
 	} else {
