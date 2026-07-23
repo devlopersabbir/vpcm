@@ -42,8 +42,8 @@ jobs:
           # Validate if REV is a purely numeric integer (e.g. 5, 12)
           if [[ "$REV" =~ ^[0-9]+$ ]]; then
             echo "Promoting numeric revision $REV from $FROM to $TO..."
-            snapcraft promote vpsm --revision="$REV" --from-channel="$FROM" --to-channel="$TO"
+            snapcraft promote vpsm --revision="$REV" --from-channel="$FROM" --to-channel="$TO" --yes
           else
-            echo "No numeric revision provided or version tag entered ($REV). Promoting latest build from channel $FROM to $TO..."
-            snapcraft promote vpsm --from-channel="$FROM" --to-channel="$TO"
+            echo "No numeric revision provided. Promoting latest build from channel $FROM to $TO..."
+            snapcraft promote vpsm --from-channel="$FROM" --to-channel="$TO" --yes
           fi
