@@ -1,16 +1,68 @@
 name: vpsm
 base: core22
 version: "latest" # Replaced during CI by sed
-summary: VPS Manager — manage your servers from anywhere
+summary: VPS Manager — Manage your servers from anywhere
 title: VPSM - VPS Manager
 contact: devlopersabbir@gmail.com
 license: MIT
 issues: https://github.com/devlopersabbir/vpcm/issues
 source-code: https://github.com/devlopersabbir/vpcm
 website: https://github.com/devlopersabbir/vpcm
+
+# Store listing metadata
+icon: snap/gui/icon.png
+type: app
+
+# Snapcraft store category & subcategory
+# See: https://snapcraft.io/docs/supported-snap-categories
+categories:
+  - development
+  - utilities
+
 description: |
-  VPSM is an open-source VPS management suite with an interactive CLI, dynamic inventory sync, 
-  and a modern Desktop app built with Wails. Securely SSH, audit, and organize your Linux servers.
+  VPSM is an open-source, local-first VPS management suite for engineers who need a fast,
+  private, and scriptable way to manage their Linux server fleet. Built entirely in Go with
+  no CGO dependencies and zero telemetry, it ships as a unified CLI, desktop GUI, and REST
+  API — all from a single snap install.
+
+  No cloud accounts. No subscriptions. No data leaves your machine.
+
+  The CLI (vpsm) provides an interactive REPL shell with ghost-text auto-suggestions, live
+  tab-completion, and persistent history search. It connects to servers via SSH using key
+  files, passphrases, or password authentication, and supports custom identity files per host.
+
+  The desktop application (vpsm-desktop) is a native Wails GUI with an integrated xterm.js
+  SSH terminal. The terminal supports translucent glass rendering, adjustable backdrop blur,
+  custom font families, cursor styles, and real-time aesthetic preview — all configurable
+  without restarting the application.
+
+  The REST API server (vpsm-api) exposes JSON endpoints for inventory queries, software
+  auditing, and remote session tracking, making it suitable for CI/CD pipelines and
+  infrastructure automation workflows.
+
+  A background daemon (vpsmd) runs continuous fleet audits, collecting installed packages,
+  running services, and hardware telemetry from managed hosts and storing them locally.
+
+  Cloud provider detection works across AWS, GCP, Azure, DigitalOcean, Hetzner, Linode,
+  Vultr, and OVH using IMDS endpoints, DMI signatures, and ASN lookups. The database layer
+  supports both embedded SQLite (offline, zero-config) and remote MongoDB for team-shared
+  inventories, switchable via a single configuration flag.
+
+  Getting started:
+
+    $ vpsm add prod-01 --host 203.0.113.10 --user ubuntu --key ~/.ssh/id_rsa
+    $ vpsm ssh prod-01
+    $ vpsm tui
+    $ vpsm export --format json > servers.json
+    $ vpsm-api --port 8080
+    $ vpsm-desktop
+
+  This snap includes four binaries: vpsm (CLI + REPL), vpsmd (background daemon),
+  vpsm-api (REST server), and vpsm-desktop (GUI application).
+
+  Source code: https://github.com/devlopersabbir/vpcm
+  License: MIT
+
 grade: stable
 confinement: strict
 
