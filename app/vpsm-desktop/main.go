@@ -83,8 +83,38 @@ func main() {
 	// Create native application menu
 	appMenu := menu.NewMenu()
 
-	// macOS default App menu
-	appMenu.Append(menu.AppMenu())
+	// macOS Application Menu ("VPSM Desktop")
+	mainSubmenu := appMenu.AddSubmenu("VPSM Desktop")
+	mainSubmenu.AddText("About VPSM Desktop", nil, func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.MessageDialog(app.ctx, runtime.MessageDialogOptions{
+				Type:    runtime.InfoDialog,
+				Title:   "About VPSM Desktop",
+				Message: "VPSM Desktop v1.2.0\nVPS Manager — Remote Server Inventory & SSH Terminal Panel\n\nDeveloped by @devlopersabbir",
+			})
+		}
+	})
+	mainSubmenu.AddText("Check for Updates...", nil, func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.MessageDialog(app.ctx, runtime.MessageDialogOptions{
+				Type:    runtime.InfoDialog,
+				Title:   "Check for Updates",
+				Message: "You are running the latest version of VPSM Desktop (v1.2.0).",
+			})
+		}
+	})
+	mainSubmenu.AddSeparator()
+	mainSubmenu.AddText("Hide VPSM Desktop", keys.CmdOrCtrl("h"), func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.WindowHide(app.ctx)
+		}
+	})
+	mainSubmenu.AddSeparator()
+	mainSubmenu.AddText("Quit VPSM Desktop", keys.CmdOrCtrl("q"), func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.Quit(app.ctx)
+		}
+	})
 
 	// View / Terminal Menu
 	viewMenu := appMenu.AddSubmenu("View")

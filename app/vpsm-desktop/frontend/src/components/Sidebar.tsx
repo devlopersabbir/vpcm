@@ -97,7 +97,7 @@ export default function Sidebar({
       {/* Footer info */}
       <div className="p-5 text-xs text-slate-500 flex justify-between items-center bg-slate-950/10">
         <span className="font-semibold tracking-wider text-slate-600">
-          BUILD v1.0.0
+          BUILD v1.2.0
         </span>
         {driver && (
           <span className="flex items-center space-x-1.5 uppercase text-cyan-400 font-bold bg-cyan-950/20 px-2 py-0.5 rounded-lg text-[10px]">

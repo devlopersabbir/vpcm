@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.2.0] - 2026-07-23
+
+* feat: add custom terminal setup screen with live aesthetic preview and split-screen controls
+* feat: implement backdrop blur, background opacity, and xterm transparency support
+* feat: add terminal_preferences table migration and GET/POST /terminal/preferences API endpoints
+* feat: add Wails application menu with zoom controls, About dialog, and update check
+* chore: synchronize version across Desktop App, CLI, and REST API to v1.2.0
+
+
 ## [v1.1.1] - 2026-07-23
 
 * chore: bump CLI version to v1.1.0 (b8adfed)

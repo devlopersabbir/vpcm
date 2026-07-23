@@ -86,7 +86,7 @@ func (s *Server) handleRoot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"name":        "VPSM API",
 		"description": "VPS Manager — Remote server inventory & SSH session tracking",
-		"version":     "v0.1.5",
+		"version":     "v1.2.0",
 		"status":      "ok",
 		"uptime":      uptime,
 		"started_at":  startedAt.UTC().Format(time.RFC3339),
