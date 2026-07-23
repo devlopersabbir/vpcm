@@ -3,18 +3,23 @@ name: Snapcraft Promote
 on:
   workflow_dispatch:
     inputs:
-      revision:
-        description: 'Snapcraft numeric revision number (e.g., 5, 12 - check snapcraft status/build output)'
-        required: true
+      from_channel:
+        description: 'Source channel (e.g. edge, candidate)'
+        required: false
+        default: 'edge'
         type: string
       to_channel:
         description: 'Target channel'
         required: true
         type: choice
         options:
-          - beta
           - candidate
+          - beta
           - stable
+      revision:
+        description: 'Snapcraft numeric revision number (optional, e.g. 5 or 12)'
+        required: false
+        type: string
 
 jobs:
   promote:
@@ -30,5 +35,8 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         run: |
-          snapcraft promote vpsm ${{ github.event.inputs.revision }} ${{ github.event.inputs.to_channel }}
-
+          if [ -n "${{ github.event.inputs.revision }}" ]; then
+            snapcraft promote vpsm --revision=${{ github.event.inputs.revision }} --to-channel=${{ github.event.inputs.to_channel }}
+          else
+            snapcraft promote vpsm --from-channel=${{ github.event.inputs.from_channel }} --to-channel=${{ github.event.inputs.to_channel }}
+          fi
