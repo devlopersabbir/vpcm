@@ -2,22 +2,18 @@
 
 ## [v1.1.3] - 2026-07-23
 
-* refactor: centralize version management and update application metadata and error reporting (b2a57a7)
-* chore: bump version to v1.1.3 [skip ci] (cff7980)
-* chore: update release workflow configuration (b260df4)
-* chore: bump version to v1.1.3 [skip ci] (ff0c960)
-* chore: bump CLI version to v1.1.2 (48710bf)
-* chore: bump version to v1.1.2 [skip ci] (094232a)
-* feat: update snap metadata with icon, categories, and expanded project description (e7182c2)
-* chore: bump version to v1.1.2 [skip ci] (4493682)
-* feat: add --yes flag to snapcraft promote commands in workflow (9f0435f)
-* fix: enforce numeric revision validation for snap promotion and update input documentation (9b53411)
-* fix: update snapcraft promote workflow syntax to always include --from-channel (dbd44ba)
-* feat: update snap-promote workflow to require source channel and include it in promotion command while adding banner asset (1f96f9c)
-
-
-## [v1.1.3] - 2026-07-23
-
+- refactor: centralize version management and update application metadata and error reporting (b2a57a7)
+- chore: bump version to v1.1.3 [skip ci] (cff7980)
+- chore: update release workflow configuration (b260df4)
+- chore: bump version to v1.1.3 [skip ci] (ff0c960)
+- chore: bump CLI version to v1.1.2 (48710bf)
+- chore: bump version to v1.1.2 [skip ci] (094232a)
+- feat: update snap metadata with icon, categories, and expanded project description (e7182c2)
+- chore: bump version to v1.1.2 [skip ci] (4493682)
+- feat: add --yes flag to snapcraft promote commands in workflow (9f0435f)
+- fix: enforce numeric revision validation for snap promotion and update input documentation (9b53411)
+- fix: update snapcraft promote workflow syntax to always include --from-channel (dbd44ba)
+- feat: update snap-promote workflow to require source channel and include it in promotion command while adding banner asset (1f96f9c)
 - chore: update release workflow configuration (b260df4)
 - chore: bump version to v1.1.3 [skip ci] (ff0c960)
 - chore: bump CLI version to v1.1.2 (48710bf)
