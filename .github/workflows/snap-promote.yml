@@ -17,7 +17,7 @@ on:
           - beta
           - stable
       revision:
-        description: 'Snapcraft numeric revision number (optional, e.g. 5 or 12)'
+        description: 'Snapcraft numeric revision number (optional, leave BLANK to promote latest build)'
         required: false
         type: string
 
@@ -35,8 +35,14 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         run: |
-          if [ -n "${{ github.event.inputs.revision }}" ]; then
-            snapcraft promote vpsm --revision=${{ github.event.inputs.revision }} --from-channel=${{ github.event.inputs.from_channel }} --to-channel=${{ github.event.inputs.to_channel }}
+          FROM="${{ github.event.inputs.from_channel }}"
+          TO="${{ github.event.inputs.to_channel }}"
+          REV="${{ github.event.inputs.revision }}"
+          
+          if [ -n "$REV" ]; then
+            echo "Promoting specific revision $REV from $FROM to $TO..."
+            snapcraft promote vpsm --revision="$REV" --from-channel="$FROM" --to-channel="$TO"
           else
-            snapcraft promote vpsm --from-channel=${{ github.event.inputs.from_channel }} --to-channel=${{ github.event.inputs.to_channel }}
+            echo "Promoting channel $FROM to $TO..."
+            snapcraft promote vpsm --from-channel="$FROM" --to-channel="$TO"
           fi
