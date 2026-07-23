@@ -17,6 +17,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
+      ldflags: ${{ steps.bump.outputs.ldflags }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,15 +33,25 @@ jobs:
       - name: Bump Version
         id: bump
         run: |
-          CURRENT_VERSION=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' cli/cli.go | head -n 1)
+          # ── Single source of truth: internal/version/version.go ──
+          # Read current version from the version package (strip quotes and 'v' prefix for math)
+          CURRENT_VERSION=$(grep -oP '(?<=Version = ")v[^"]+' internal/version/version.go)
+          echo "Current version: $CURRENT_VERSION"
+
           VERSION_NUM=${CURRENT_VERSION#v}
           IFS='.' read -r major minor patch <<< "$VERSION_NUM"
           new_patch=$((patch + 1))
           NEW_VERSION="v$major.$minor.$new_patch"
           echo "New version: $NEW_VERSION"
 
-          sed -i "s/$CURRENT_VERSION/$NEW_VERSION/g" cli/cli.go
+          # Update ONLY internal/version/version.go — this is the single source
+          sed -i "s|var Version = \".*\"|var Version = \"$NEW_VERSION\"|" internal/version/version.go
 
+          # Build the ldflags string used by ALL go build commands
+          LDFLAGS="-s -w -X github.com/devlopersabbir/vpcm/internal/version.Version=$NEW_VERSION"
+          echo "ldflags=$LDFLAGS" >> $GITHUB_OUTPUT
+
+          # Generate release notes
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
             COMMIT_LOGS=$(git log --pretty=format:"* %s (%h)" ${PREV_TAG}..HEAD)
@@ -73,7 +84,7 @@ jobs:
           name: release-info
           path: |
             release_notes.md
-            cli/cli.go
+            internal/version/version.go
             CHANGELOG.md
 
   # ─────────────────────────────────────────────────────────────
@@ -92,9 +103,11 @@ jobs:
           name: release-info
           path: .
 
-      - name: Restore bumped files
+      - name: Restore bumped version file
         run: |
-          cp cli.go cli/cli.go || true
+          # The bumped version.go was uploaded as an artifact — restore it so
+          # the ldflags injection has a consistent file on disk too
+          cp version.go internal/version/version.go || true
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -102,6 +115,8 @@ jobs:
           go-version: '1.25.x'
 
       - name: Build Cross-Platform CLI Binaries
+        env:
+          LDFLAGS: ${{ needs.bump-version.outputs.ldflags }}
         run: |
           mkdir -p release
           targets=("darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64" "windows/amd64" "windows/386")
@@ -113,9 +128,10 @@ jobs:
             fi
             output_name="vpsm-${goos}-${goarch}"
             mkdir -p "release/$output_name"
-            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsm$ext" ./cmd/vpsm
-            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsmd$ext" ./cmd/vpsmd
-            GOOS=$goos GOARCH=$goarch go build -ldflags="-s -w" -o "release/$output_name/vpsm-api$ext" ./cmd/vpsm-api
+            # Inject version into all three binaries via ldflags
+            GOOS=$goos GOARCH=$goarch go build -ldflags="$LDFLAGS" -o "release/$output_name/vpsm$ext" ./cmd/vpsm
+            GOOS=$goos GOARCH=$goarch go build -ldflags="$LDFLAGS" -o "release/$output_name/vpsmd$ext" ./cmd/vpsmd
+            GOOS=$goos GOARCH=$goarch go build -ldflags="$LDFLAGS" -o "release/$output_name/vpsm-api$ext" ./cmd/vpsm-api
             cp scripts/shell_wrapper.sh "release/$output_name/" || true
             cd release
             if [ "$goos" = "windows" ]; then
@@ -186,20 +202,50 @@ jobs:
         shell: bash
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
+      # ── Stamp version into wails.json before building ───────
+      # Wails reads info.productVersion to populate:
+      #   macOS  → CFBundleVersion & CFBundleShortVersionString in Info.plist
+      #   Windows → FileVersion / ProductVersion in .exe metadata + NSIS installer
+      # productVersion must be plain semver (no leading 'v'), e.g. "1.1.3"
+      - name: Inject Version into wails.json
+        shell: bash
+        env:
+          VERSION: ${{ needs.bump-version.outputs.new_version }}
+        run: |
+          # Strip the leading 'v' — Wails expects "1.1.3" not "v1.1.3"
+          PLAIN_VERSION="${VERSION#v}"
+          echo "Setting wails.json productVersion to $PLAIN_VERSION"
+          # jq is pre-installed on all GitHub-hosted runners
+          jq --arg v "$PLAIN_VERSION" '.info.productVersion = $v' \
+            app/vpsm-desktop/wails.json > tmp.json && mv tmp.json app/vpsm-desktop/wails.json
+          echo "Updated wails.json:"
+          cat app/vpsm-desktop/wails.json | grep productVersion
+
       # ── Build the Wails app ─────────────────────────────────
+      # Wails passes -ldflags to the underlying go build via -ldflags flag.
+      # This stamps the version into the desktop binary at compile time.
       - name: Build Wails App (Linux / macOS)
         if: matrix.platform != 'windows'
         shell: bash
+        env:
+          LDFLAGS: ${{ needs.bump-version.outputs.ldflags }}
+          VERSION: ${{ needs.bump-version.outputs.new_version }}
         run: |
           cd app/vpsm-desktop
-          ~/go/bin/wails build ${{ matrix.wails_tags }}
+          # Restore the bumped version.go so wails picks it up via module
+          mkdir -p ../../internal/version
+          cp ../../internal/version/version.go ../../internal/version/version.go 2>/dev/null || true
+          ~/go/bin/wails build ${{ matrix.wails_tags }} -ldflags "$LDFLAGS"
 
       - name: Build Wails App (Windows — NSIS installer)
         if: matrix.platform == 'windows'
         shell: bash
+        env:
+          LDFLAGS: ${{ needs.bump-version.outputs.ldflags }}
+          VERSION: ${{ needs.bump-version.outputs.new_version }}
         run: |
           cd app/vpsm-desktop
-          ~/go/bin/wails build -nsis
+          ~/go/bin/wails build -nsis -ldflags "$LDFLAGS"
 
       # ══════════════════════════════════════════════════════════
       #  macOS — ad-hoc sign + create DMG
@@ -420,9 +466,10 @@ jobs:
 
       - name: Apply Version Changes
         run: |
-          cp dist/release-info/cli.go cli/cli.go || true
+          # Commit only the bumped version.go — single source of truth
+          cp dist/release-info/version.go internal/version/version.go || true
           cp dist/release-info/CHANGELOG.md CHANGELOG.md || true
-          git add cli/cli.go CHANGELOG.md
+          git add internal/version/version.go CHANGELOG.md
           git commit -m "chore: bump version to ${{ needs.bump-version.outputs.new_version }} [skip ci]" || true
           git push origin main || true
 

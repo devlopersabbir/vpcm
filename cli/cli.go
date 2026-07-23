@@ -6,10 +6,9 @@ import (
 
 	"github.com/devlopersabbir/vpcm/internal/config"
 	"github.com/devlopersabbir/vpcm/internal/logger"
+	"github.com/devlopersabbir/vpcm/internal/version"
 	"github.com/spf13/cobra"
 )
-
-const Version = "v1.1.2"
 
 var identityFile string
 
@@ -30,7 +29,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version info",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(Version)
+		fmt.Println(version.Version)
 	},
 }
 

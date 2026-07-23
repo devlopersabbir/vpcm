@@ -9,5 +9,12 @@
   "author": {
     "name": "devlopersabbir",
     "email": "devlopersabbir@gmail.com"
+  },
+  "info": {
+    "companyName": "devlopersabbir",
+    "productName": "VPSM Desktop",
+    "productVersion": "1.1.2",
+    "copyright": "Copyright © 2024 devlopersabbir",
+    "comments": "VPS Manager — manage your servers from anywhere"
   }
 }

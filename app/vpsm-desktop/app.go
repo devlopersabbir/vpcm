@@ -12,6 +12,7 @@ import (
 
 	"github.com/devlopersabbir/vpcm/internal/config"
 	"github.com/devlopersabbir/vpcm/internal/inventory"
+	"github.com/devlopersabbir/vpcm/internal/version"
 )
 
 var httpClient = &http.Client{
@@ -279,7 +280,7 @@ func (a *App) GetTerminalPreference() (*inventory.TerminalPreference, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf("VPSM Desktop %s\nVPS Manager — Remote Server Inventory & SSH Terminal Panel\n\nDeveloped by @devlopersabbir", version.Version)
 	}
 
 	var pref inventory.TerminalPreference
