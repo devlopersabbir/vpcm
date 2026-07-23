@@ -5,11 +5,11 @@ on:
     inputs:
       from_channel:
         description: 'Source channel (e.g. edge, candidate)'
-        required: false
+        required: true
         default: 'edge'
         type: string
       to_channel:
-        description: 'Target channel'
+        description: 'Target channel (e.g. candidate, beta, stable)'
         required: true
         type: choice
         options:
@@ -36,7 +36,7 @@ jobs:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         run: |
           if [ -n "${{ github.event.inputs.revision }}" ]; then
-            snapcraft promote vpsm --revision=${{ github.event.inputs.revision }} --to-channel=${{ github.event.inputs.to_channel }}
+            snapcraft promote vpsm --revision=${{ github.event.inputs.revision }} --from-channel=${{ github.event.inputs.from_channel }} --to-channel=${{ github.event.inputs.to_channel }}
           else
             snapcraft promote vpsm --from-channel=${{ github.event.inputs.from_channel }} --to-channel=${{ github.event.inputs.to_channel }}
           fi
