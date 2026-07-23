@@ -2,6 +2,11 @@
 
 ## [v1.1.4] - 2026-07-23
 
+* fix: remove categories field from snapcraft.yaml (not valid for core22 base) (18fd9fe)
+
+
+## [v1.1.4] - 2026-07-23
+
 * chore: bump version to v1.1.3 and clean up redundant changelog entries (a93bb75)
 * chore: bump version to v1.1.3 [skip ci] (319ce2b)
 * refactor: centralize version management and update application metadata and error reporting (b2a57a7)
