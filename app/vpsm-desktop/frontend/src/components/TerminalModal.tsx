@@ -2,7 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { X, Maximize2, Minimize2, RefreshCw, Terminal as TerminalIcon, ShieldCheck, AlertCircle } from 'lucide-react';
+import {
+  X,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  Terminal as TerminalIcon,
+  ShieldCheck,
+  AlertCircle,
+  AppWindow
+} from 'lucide-react';
 
 // Wails runtime bindings declarations
 declare global {
@@ -18,6 +27,8 @@ declare global {
           SendSSHTerminalInput: (sessionId: string, data: string) => Promise<void>;
           ResizeSSHTerminal: (sessionId: string, rows: number, cols: number) => Promise<void>;
           CloseSSHTerminal: (sessionId: string) => Promise<void>;
+          OpenStandaloneTerminalWindow?: (serverID: number, params: any) => Promise<void>;
+          GetTerminalInitialParams?: () => Promise<any>;
         };
       };
     };
@@ -37,9 +48,10 @@ interface ServerInfo {
 interface TerminalModalProps {
   server: ServerInfo;
   onClose: () => void;
+  isStandaloneWindow?: boolean;
 }
 
-export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose }) => {
+export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, isStandaloneWindow = false }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -47,11 +59,20 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
 
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error' | 'disconnected'>('connecting');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  const [isMaximized, setIsMaximized] = useState<boolean>(isStandaloneWindow);
 
   // Custom password prompt state if credentials missing
   const [authSecret, setAuthSecret] = useState<string>(server.auth_secret || '');
   const [requiresAuthInput, setRequiresAuthInput] = useState<boolean>(!server.auth_secret);
+
+  const syncFit = () => {
+    if (fitAddonRef.current && xtermRef.current && sessionIdRef.current) {
+      fitAddonRef.current.fit();
+      const rows = xtermRef.current.rows;
+      const cols = xtermRef.current.cols;
+      window.go?.main?.App?.ResizeSSHTerminal(sessionIdRef.current, rows, cols).catch(() => {});
+    }
+  };
 
   const startSession = async (secretToUse: string) => {
     setStatus('connecting');
@@ -81,20 +102,20 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
       setStatus('connected');
 
       // Listen for stdout/stderr data from Go backend
-      const dataOff = window.runtime?.EventsOn(`ssh:data:${sid}`, (data: string) => {
+      window.runtime?.EventsOn(`ssh:data:${sid}`, (data: string) => {
         if (xtermRef.current) {
           xtermRef.current.write(data);
         }
       });
 
       // Listen for error event
-      const errorOff = window.runtime?.EventsOn(`ssh:error:${sid}`, (errData: string) => {
+      window.runtime?.EventsOn(`ssh:error:${sid}`, (errData: string) => {
         setErrorMessage(errData);
         setStatus('error');
       });
 
       // Listen for close event
-      const closedOff = window.runtime?.EventsOn(`ssh:closed:${sid}`, () => {
+      window.runtime?.EventsOn(`ssh:closed:${sid}`, () => {
         setStatus('disconnected');
         if (xtermRef.current) {
           xtermRef.current.write('\r\n\x1b[33m[SSH Connection Closed]\x1b[0m\r\n');
@@ -103,10 +124,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
 
       // Fit layout after connect
       setTimeout(() => {
-        if (fitAddonRef.current && xtermRef.current) {
-          fitAddonRef.current.fit();
-          app.ResizeSSHTerminal(sid, xtermRef.current.rows, xtermRef.current.cols).catch(() => {});
-        }
+        syncFit();
       }, 150);
 
     } catch (err: any) {
@@ -170,17 +188,12 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
 
     // Handle window resize
     const handleResize = () => {
-      if (fitAddonRef.current && xtermRef.current && sessionIdRef.current) {
-        fitAddonRef.current.fit();
-        const rows = xtermRef.current.rows;
-        const cols = xtermRef.current.cols;
-        window.go?.main?.App?.ResizeSSHTerminal(sessionIdRef.current, rows, cols).catch(() => {});
-      }
+      syncFit();
     };
 
     window.addEventListener('resize', handleResize);
 
-    // Auto start session immediately (attempts stored secret or local ~/.ssh keys)
+    // Auto start session immediately
     startSession(server.auth_secret || '');
 
     return () => {
@@ -191,13 +204,6 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
       term.dispose();
     };
   }, []);
-
-  const handleAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authSecret) return;
-    setRequiresAuthInput(false);
-    startSession(authSecret);
-  };
 
   const handleDisconnect = () => {
     if (sessionIdRef.current && window.go?.main?.App) {
@@ -213,11 +219,63 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
     startSession(authSecret);
   };
 
+  const toggleMaximize = () => {
+    const nextState = !isMaximized;
+    setIsMaximized(nextState);
+
+    // Refit after transition
+    syncFit();
+    setTimeout(syncFit, 100);
+    setTimeout(syncFit, 200);
+    setTimeout(syncFit, 350);
+  };
+
+  const handleOpenStandaloneWindow = () => {
+    if (window.go?.main?.App?.OpenStandaloneTerminalWindow) {
+      window.go.main.App.OpenStandaloneTerminalWindow(
+        server.id || 0,
+        {
+          Host: server.host,
+          Port: server.port || 22,
+          Username: server.username || 'root',
+          AuthType: server.auth_type || 'password',
+          AuthSecret: server.auth_secret || '',
+        }
+      ).catch((err) => {
+        console.error('Failed to open standalone terminal window:', err);
+      });
+    }
+  };
+
+  if (isStandaloneWindow) {
+    return (
+      <div className="w-screen h-screen bg-[#0d1117] p-0 m-0 overflow-hidden relative">
+        {status === 'error' && errorMessage && (
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 bg-red-500/20 border border-red-500/40 text-red-300 rounded-md text-xs font-mono flex items-center gap-2 shadow-lg">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+        <div ref={terminalRef} className="w-full h-full text-left" />
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
+        isStandaloneWindow
+          ? 'p-0 bg-[#0d1117]'
+          : isMaximized
+          ? 'p-2 bg-black/90 backdrop-blur-md'
+          : 'p-4 bg-black/80 backdrop-blur-sm'
+      }`}
+    >
       <div
-        className={`flex flex-col bg-[#0d1117] border border-gray-800 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 ${
-          isMaximized ? 'w-full h-full' : 'w-[95%] max-w-5xl h-[80vh]'
+        className={`flex flex-col bg-[#0d1117] transition-all duration-300 ${
+          isStandaloneWindow || isMaximized
+            ? 'w-full h-full rounded-none border-none'
+            : 'w-[95%] max-w-5xl h-[80vh] rounded-xl border border-gray-800 shadow-2xl overflow-hidden'
         }`}
       >
         {/* Header Bar */}
@@ -236,7 +294,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Status Badge */}
             {status === 'connecting' && (
               <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full">
@@ -259,60 +317,58 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose })
               </span>
             )}
 
-            {/* Action controls */}
+            {/* Reconnect button */}
             {(status === 'error' || status === 'disconnected') && !requiresAuthInput && (
               <button
                 onClick={handleReconnect}
                 className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition"
-                title="Reconnect"
+                title="Reconnect SSH"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
             )}
 
-            <button
-              onClick={() => {
-                const nextState = !isMaximized;
-                setIsMaximized(nextState);
+            {/* Standalone Window Pop-Out Button */}
+            {!isStandaloneWindow && (
+              <button
+                onClick={handleOpenStandaloneWindow}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-slate-950 border border-cyan-500/20 rounded-lg text-xs font-black transition-all shadow-sm"
+                title="Open as Standalone Desktop Window (Alacritty Style)"
+              >
+                <AppWindow className="w-3.5 h-3.5" />
+                <span>Window</span>
+              </button>
+            )}
 
-                // Refit xterm canvas during and after container expansion transition
-                const syncFit = () => {
-                  if (fitAddonRef.current && xtermRef.current && sessionIdRef.current) {
-                    fitAddonRef.current.fit();
-                    const rows = xtermRef.current.rows;
-                    const cols = xtermRef.current.cols;
-                    window.go?.main?.App?.ResizeSSHTerminal(sessionIdRef.current, rows, cols).catch(() => {});
-                  }
-                };
+            {/* Maximize / Restore Toggle */}
+            {!isStandaloneWindow && (
+              <button
+                onClick={toggleMaximize}
+                className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition"
+                title={isMaximized ? 'Restore Modal' : 'Maximize Window'}
+              >
+                {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            )}
 
-                // Trigger multiple refits throughout CSS transition (0ms, 100ms, 200ms, 320ms)
-                syncFit();
-                setTimeout(syncFit, 100);
-                setTimeout(syncFit, 200);
-                setTimeout(syncFit, 320);
-              }}
-              className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition"
-              title={isMaximized ? 'Restore' : 'Maximize'}
-            >
-              {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={handleDisconnect}
-              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
-              title="Close Terminal"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Close Terminal Modal */}
+            {!isStandaloneWindow && (
+              <button
+                onClick={handleDisconnect}
+                className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                title="Close Terminal Modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Content Body */}
         <div className="relative flex-1 bg-[#0d1117] p-2 overflow-hidden">
-
           {status === 'error' && errorMessage && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-xs flex items-center gap-2 shadow-lg">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}

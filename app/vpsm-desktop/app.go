@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/config"
@@ -22,7 +24,10 @@ var httpClient = &http.Client{
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx              context.Context
+	isTerminalOnly   bool
+	terminalServerID uint
+	terminalParams   SSHConnectionParams
 }
 
 // NewApp creates a new App application struct
@@ -254,4 +259,57 @@ func (a *App) GetConfig() (*config.Config, error) {
 // SaveConfig updates the active settings
 func (a *App) SaveConfig(cfg config.Config) error {
 	return config.Save(&cfg)
+}
+
+// OpenStandaloneTerminalWindow spawns an independent native application window containing our custom terminal
+func (a *App) OpenStandaloneTerminalWindow(serverID uint, params SSHConnectionParams) error {
+	execPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	args := []string{}
+	if serverID > 0 {
+		args = append(args, fmt.Sprintf("-terminal-server-id=%d", serverID))
+	}
+	if params.Host != "" {
+		args = append(args, fmt.Sprintf("-terminal-host=%s", params.Host))
+		args = append(args, fmt.Sprintf("-terminal-port=%d", params.Port))
+		args = append(args, fmt.Sprintf("-terminal-user=%s", params.Username))
+		args = append(args, fmt.Sprintf("-terminal-authtype=%s", params.AuthType))
+		args = append(args, fmt.Sprintf("-terminal-authsecret=%s", params.AuthSecret))
+	}
+
+	cmd := exec.Command(execPath, args...)
+	cmd.Env = os.Environ()
+	return cmd.Start()
+}
+
+// GetTerminalInitialParams returns initial params if app was launched as terminal-only window
+func (a *App) GetTerminalInitialParams() (map[string]interface{}, error) {
+	if !a.isTerminalOnly {
+		return map[string]interface{}{"is_terminal_only": false}, nil
+	}
+
+	// If server ID was passed, fetch the full fresh server record directly from the REST API
+	if a.terminalServerID > 0 {
+		srv, err := a.GetServer(a.terminalServerID)
+		if err == nil && srv != nil {
+			return map[string]interface{}{
+				"is_terminal_only": true,
+				"params": map[string]interface{}{
+					"host":        srv.Host,
+					"port":        srv.Port,
+					"username":    srv.Username,
+					"auth_type":   srv.AuthType,
+					"auth_secret": srv.AuthSecret,
+				},
+			}, nil
+		}
+	}
+
+	return map[string]interface{}{
+		"is_terminal_only": true,
+		"params":           a.terminalParams,
+	}, nil
 }

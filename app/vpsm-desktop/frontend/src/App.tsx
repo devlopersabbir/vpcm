@@ -20,6 +20,7 @@ import {
 } from "../wailsjs/go/main/App";
 
 export default function App() {
+  const [terminalOnlyParams, setTerminalOnlyParams] = useState<any | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     return localStorage.getItem("vpsm_onboarding_completed") !== "true";
   });
@@ -36,11 +37,48 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
+    // Check if launched in standalone terminal-only window mode
+    if ((window as any).go?.main?.App?.GetTerminalInitialParams) {
+      (window as any).go.main.App.GetTerminalInitialParams()
+        .then((res: any) => {
+          if (res?.is_terminal_only && res?.params) {
+            setTerminalOnlyParams(res.params);
+          }
+        })
+        .catch(() => {});
+    }
+
     if (!showOnboarding) {
       fetchServers();
       fetchConfig();
     }
   }, [showOnboarding]);
+
+  // If running as standalone terminal window (Alacritty-style)
+  if (terminalOnlyParams) {
+    const p = terminalOnlyParams;
+    const srv = {
+      id: 0,
+      name: p.host || p.Host || "Terminal",
+      host: p.host || p.Host || "",
+      port: p.port || p.Port || 22,
+      username: p.username || p.Username || "root",
+      auth_type: p.auth_type || p.AuthType || "password",
+      auth_secret: p.auth_secret || p.AuthSecret || "",
+    };
+
+    return (
+      <div className="w-screen h-screen bg-[#0d1117] p-0 m-0 overflow-hidden">
+        <TerminalModal
+          server={srv}
+          isStandaloneWindow={true}
+          onClose={() => {
+            window.close();
+          }}
+        />
+      </div>
+    );
+  }
 
   if (showOnboarding) {
     return <Onboarding onComplete={() => setShowOnboarding(false)} />;

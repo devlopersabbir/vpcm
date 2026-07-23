@@ -30,6 +30,14 @@ export function GetServers() {
   return window['go']['main']['App']['GetServers']();
 }
 
+export function GetTerminalInitialParams() {
+  return window['go']['main']['App']['GetTerminalInitialParams']();
+}
+
+export function OpenStandaloneTerminalWindow(arg1, arg2) {
+  return window['go']['main']['App']['OpenStandaloneTerminalWindow'](arg1, arg2);
+}
+
 export function ResizeSSHTerminal(arg1, arg2, arg3) {
   return window['go']['main']['App']['ResizeSSHTerminal'](arg1, arg2, arg3);
 }

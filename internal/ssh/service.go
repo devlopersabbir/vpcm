@@ -28,7 +28,7 @@ type realSSHClient struct {
 }
 
 func (s *sshService) Connect(ctx context.Context, host string, port int, username string, authType string, authSecret string) (Client, error) {
-	var authMethod ssh.AuthMethod
+	var authMethods []ssh.AuthMethod
 
 	if authType == "key" || authType == "keyfile" {
 		var signer ssh.Signer
@@ -61,17 +61,23 @@ func (s *sshService) Connect(ctx context.Context, host string, port int, usernam
 		if signer == nil {
 			return nil, fmt.Errorf("failed to parse private key: empty signer")
 		}
-		authMethod = ssh.PublicKeys(signer)
+		authMethods = append(authMethods, ssh.PublicKeys(signer))
 	} else {
-		authMethod = ssh.Password(authSecret)
+		pwd := authSecret
+		authMethods = append(authMethods, ssh.Password(pwd))
+		authMethods = append(authMethods, ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+			answers := make([]string, len(questions))
+			for i := range questions {
+				answers[i] = pwd
+			}
+			return answers, nil
+		}))
 	}
 
 	config := &ssh.ClientConfig{
-		User: username,
-		Auth: []ssh.AuthMethod{
-			authMethod,
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // For v0.0.1 simplicity
+		User:            username,
+		Auth:            authMethods,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         s.timeout,
 	}
 

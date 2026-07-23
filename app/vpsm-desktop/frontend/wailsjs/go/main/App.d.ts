@@ -18,6 +18,10 @@ export function GetServer(arg1:number):Promise<inventory.ServerView>;
 
 export function GetServers():Promise<Array<inventory.ServerView>>;
 
+export function GetTerminalInitialParams():Promise<Record<string, any>>;
+
+export function OpenStandaloneTerminalWindow(arg1:number,arg2:main.SSHConnectionParams):Promise<void>;
+
 export function ResizeSSHTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
 
 export function SaveConfig(arg1:config.Config):Promise<void>;

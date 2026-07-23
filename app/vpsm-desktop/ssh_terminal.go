@@ -5,6 +5,8 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,6 +40,37 @@ type SSHConnectionParams struct {
 	Cols       int    `json:"cols"`
 }
 
+func tryParseKeyFile(path string, passphrase string) (ssh.Signer, error) {
+	if path == "" {
+		return nil, fmt.Errorf("empty path")
+	}
+
+	// Expand ~ to user home
+	if len(path) > 1 && path[0] == '~' && (path[1] == '/' || path[1] == '\\') {
+		if home, err := os.UserHomeDir(); err == nil {
+			path = filepath.Join(home, path[2:])
+		}
+	}
+
+	keyBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	signer, err := ssh.ParsePrivateKey(keyBytes)
+	if err == nil {
+		return signer, nil
+	}
+
+	if passphrase != "" {
+		if signerPass, err := ssh.ParsePrivateKeyWithPassphrase(keyBytes, []byte(passphrase)); err == nil {
+			return signerPass, nil
+		}
+	}
+
+	return nil, err
+}
+
 // StartSSHTerminal initiates a direct SSH PTY session to a target host
 func (a *App) StartSSHTerminal(params SSHConnectionParams) (string, error) {
 	if params.Port == 0 {
@@ -54,77 +87,121 @@ func (a *App) StartSSHTerminal(params SSHConnectionParams) (string, error) {
 	}
 
 	var authMethods []ssh.AuthMethod
+	addedSignerFingerprints := make(map[string]bool)
 
-	switch params.AuthType {
-	case "key":
-		if params.AuthSecret != "" {
-			// Try as raw key string
-			if signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret)); err == nil {
-				authMethods = append(authMethods, ssh.PublicKeys(signer))
-			} else {
-				// Try as key file path
-				if keyBytes, err := os.ReadFile(params.AuthSecret); err == nil {
-					if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
-						authMethods = append(authMethods, ssh.PublicKeys(signer))
-					}
-				}
-			}
+	addSigner := func(signer ssh.Signer) {
+		if signer == nil {
+			return
 		}
-	case "keyfile":
-		if params.AuthSecret != "" {
-			if keyBytes, err := os.ReadFile(params.AuthSecret); err == nil {
-				if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
-					authMethods = append(authMethods, ssh.PublicKeys(signer))
-				}
-			}
-		}
-	case "password":
-		if params.AuthSecret != "" {
-			authMethods = append(authMethods, ssh.Password(params.AuthSecret))
-		}
-	}
-
-	// Fallback: If AuthSecret provided, test it both as key string/filepath AND password
-	if params.AuthSecret != "" {
-		if signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret)); err == nil {
+		fp := string(signer.PublicKey().Marshal())
+		if !addedSignerFingerprints[fp] {
+			addedSignerFingerprints[fp] = true
 			authMethods = append(authMethods, ssh.PublicKeys(signer))
 		}
-		if keyBytes, err := os.ReadFile(params.AuthSecret); err == nil {
-			if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
-				authMethods = append(authMethods, ssh.PublicKeys(signer))
-			}
-		}
-		authMethods = append(authMethods, ssh.Password(params.AuthSecret))
 	}
 
-	// Auto-scan ALL private key files in ~/.ssh/ directory
+	addKeyPathSigner := func(relPath string) {
+		if relPath == "" {
+			return
+		}
+
+		// Try exact path
+		if signer, err := tryParseKeyFile(relPath, params.AuthSecret); err == nil {
+			addSigner(signer)
+			return
+		}
+
+		// Try candidate locations if path is relative
+		if home, err := os.UserHomeDir(); err == nil {
+			candidates := []string{
+				filepath.Join(home, ".ssh", relPath),
+				filepath.Join(home, relPath),
+				filepath.Join(home, "Downloads", relPath),
+				filepath.Join(home, "Desktop", relPath),
+				filepath.Join("/Users/sabbir/own/vpcm", relPath),
+			}
+			for _, cand := range candidates {
+				if signer, err := tryParseKeyFile(cand, params.AuthSecret); err == nil {
+					addSigner(signer)
+					return
+				}
+			}
+		}
+	}
+
+	// 1. Primary Auth Method based on params.AuthType
+	if params.AuthType == "password" && params.AuthSecret != "" {
+		pwd := params.AuthSecret
+		authMethods = append(authMethods, ssh.Password(pwd))
+		authMethods = append(authMethods, ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+			answers := make([]string, len(questions))
+			for i := range questions {
+				answers[i] = pwd
+			}
+			return answers, nil
+		}))
+	}
+
+	if (params.AuthType == "key" || params.AuthType == "keyfile") && params.AuthSecret != "" {
+		addKeyPathSigner(params.AuthSecret)
+		if signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret)); err == nil {
+			addSigner(signer)
+		}
+	}
+
+	// 2. Fallback: Process explicit AuthSecret as both key and password/keyboard-interactive
+	if params.AuthSecret != "" && params.AuthType != "password" {
+		addKeyPathSigner(params.AuthSecret)
+
+		// Try as raw key string
+		if signer, err := ssh.ParsePrivateKey([]byte(params.AuthSecret)); err == nil {
+			addSigner(signer)
+		}
+
+		// Try as password & keyboard-interactive
+		pwd := params.AuthSecret
+		authMethods = append(authMethods, ssh.Password(pwd))
+		authMethods = append(authMethods, ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+			answers := make([]string, len(questions))
+			for i := range questions {
+				answers[i] = pwd
+			}
+			return answers, nil
+		}))
+	}
+
+	// 2. Auto-scan private key files in ~/.ssh/
 	if homeDir, err := os.UserHomeDir(); err == nil {
-		sshDir := homeDir + "/.ssh"
+		sshDir := filepath.Join(homeDir, ".ssh")
 		if entries, err := os.ReadDir(sshDir); err == nil {
 			for _, entry := range entries {
 				if entry.IsDir() {
 					continue
 				}
 				name := entry.Name()
-				// Ignore known hosts, config, public keys, sockets, etc.
 				if name == "known_hosts" || name == "known_hosts.old" || name == "config" || (len(name) > 4 && name[len(name)-4:] == ".pub") {
 					continue
 				}
-				keyPath := sshDir + "/" + name
-				keyBytes, err := os.ReadFile(keyPath)
-				if err != nil {
-					continue
+				keyPath := filepath.Join(sshDir, name)
+				if signer, err := tryParseKeyFile(keyPath, params.AuthSecret); err == nil {
+					addSigner(signer)
 				}
+			}
+		}
+	}
 
-				// Attempt unencrypted private key parse
-				signer, err := ssh.ParsePrivateKey(keyBytes)
-				if err == nil {
-					authMethods = append(authMethods, ssh.PublicKeys(signer))
-				} else {
-					// If key is encrypted with passphrase and AuthSecret is provided, try parsing with passphrase
-					if params.AuthSecret != "" {
-						if signerWithPass, err := ssh.ParsePrivateKeyWithPassphrase(keyBytes, []byte(params.AuthSecret)); err == nil {
-							authMethods = append(authMethods, ssh.PublicKeys(signerWithPass))
+	// 3. Auto-scan .pem / .key files in working directory & home
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		for _, dir := range []string{homeDir, "/Users/sabbir/own/vpcm"} {
+			if entries, err := os.ReadDir(dir); err == nil {
+				for _, entry := range entries {
+					if entry.IsDir() {
+						continue
+					}
+					name := entry.Name()
+					if strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") {
+						if signer, err := tryParseKeyFile(filepath.Join(dir, name), params.AuthSecret); err == nil {
+							addSigner(signer)
 						}
 					}
 				}
@@ -132,12 +209,14 @@ func (a *App) StartSSHTerminal(params SSHConnectionParams) (string, error) {
 		}
 	}
 
-	// Connect to local SSH Agent if available (SSH_AUTH_SOCK)
+	// 4. Connect to local SSH Agent if available (SSH_AUTH_SOCK)
 	if agentSock := os.Getenv("SSH_AUTH_SOCK"); agentSock != "" {
 		if agentConn, err := net.DialTimeout("unix", agentSock, 2*time.Second); err == nil {
 			ag := agent.NewClient(agentConn)
 			if signers, err := ag.Signers(); err == nil && len(signers) > 0 {
-				authMethods = append(authMethods, ssh.PublicKeys(signers...))
+				for _, s := range signers {
+					addSigner(s)
+				}
 			}
 		}
 	}
