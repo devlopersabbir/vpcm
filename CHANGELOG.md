@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.1.2] - 2026-07-23
+
+* chore: revert CLI version to v1.1.1 (2973e62)
+
+
 ## [v1.1.1] - 2026-07-23
 
 - chore: bump CLI version to v1.1.0 (b8adfed)
