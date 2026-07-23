@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.1.1] - 2026-07-23
+
+* chore: bump CLI version to v1.1.0 (b8adfed)
+* refactor: remove error box styling and path highlighting from CLI error output (d3f0296)
+* feat: implement centralized error handling with custom formatting and improved SSH key validation messaging (22d566b)
+* feat: add support for SSH private key file paths and add corresponding unit tests (c0348a7)
+
+
 ## [v0.1.17] - 2026-07-22
 
 * Update cli.go (d08be21)
