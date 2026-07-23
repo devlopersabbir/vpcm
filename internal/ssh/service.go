@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/events"
@@ -33,21 +34,32 @@ func (s *sshService) Connect(ctx context.Context, host string, port int, usernam
 		var signer ssh.Signer
 		var parseErr error
 
-		if len(authSecret) > 0 {
-			signer, parseErr = ssh.ParsePrivateKey([]byte(authSecret))
+		trimmedSecret := strings.TrimSpace(authSecret)
+		if trimmedSecret == "" {
+			return nil, fmt.Errorf("no SSH key file path or key content provided")
 		}
 
-		if parseErr != nil || signer == nil {
+		if strings.HasPrefix(trimmedSecret, "-----BEGIN") {
+			signer, parseErr = ssh.ParsePrivateKey([]byte(authSecret))
+			if parseErr != nil {
+				return nil, fmt.Errorf("failed to parse private key: %w", parseErr)
+			}
+		} else {
 			keyBytes, readErr := os.ReadFile(authSecret)
-			if readErr == nil {
-				signer, parseErr = ssh.ParsePrivateKey(keyBytes)
-			} else if parseErr == nil {
-				parseErr = readErr
+			if readErr != nil {
+				if os.IsNotExist(readErr) {
+					return nil, fmt.Errorf("SSH key file not found: %s", authSecret)
+				}
+				return nil, fmt.Errorf("failed to read SSH key file %s: %w", authSecret, readErr)
+			}
+			signer, parseErr = ssh.ParsePrivateKey(keyBytes)
+			if parseErr != nil {
+				return nil, fmt.Errorf("failed to parse private key from file %s: %w", authSecret, parseErr)
 			}
 		}
 
-		if parseErr != nil || signer == nil {
-			return nil, fmt.Errorf("failed to parse private key: %w", parseErr)
+		if signer == nil {
+			return nil, fmt.Errorf("failed to parse private key: empty signer")
 		}
 		authMethod = ssh.PublicKeys(signer)
 	} else {

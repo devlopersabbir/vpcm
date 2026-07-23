@@ -155,6 +155,12 @@ func runSSHConnection(cmd *cobra.Command, args []string) error {
 		}	}
 
 	if identityFile != "" {
+		if _, statErr := os.Stat(identityFile); statErr != nil {
+			if os.IsNotExist(statErr) {
+				return fmt.Errorf("SSH key file not found: %s", identityFile)
+			}
+			return fmt.Errorf("failed to access SSH key file %s: %w", identityFile, statErr)
+		}
 		keyBytes, err := os.ReadFile(identityFile)
 		if err == nil {
 			target.AuthType = "key"

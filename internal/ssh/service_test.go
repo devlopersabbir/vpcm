@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -42,6 +43,9 @@ func TestConnectKeyAuthParsing(t *testing.T) {
 	_, err := svc.Connect(context.Background(), "127.0.0.1", 22222, "root", "keyfile", "/nonexistent/path/key.pem")
 	if err == nil {
 		t.Fatal("expected error for non-existent key file path, got nil")
+	}
+	if !strings.Contains(err.Error(), "SSH key file not found") {
+		t.Fatalf("expected error to contain 'SSH key file not found', got: %v", err)
 	}
 
 	// Test raw key string parsing (should fail at connection dial step, not key parse step)

@@ -240,7 +240,9 @@ Server names and host IPs are loaded live from your local inventory database.`,
 
 			// Execute the command through cobra root
 			rootCmd.SetArgs(strings.Fields(input))
-			_ = rootCmd.Execute()
+			if execErr := rootCmd.Execute(); execErr != nil {
+				PrintError(execErr)
+			}
 
 			// Reload server list after mutating commands
 			if strings.HasPrefix(input, "server add") || strings.HasPrefix(input, "server remove") {

@@ -61,11 +61,14 @@ func init() {
 
 	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverFavoriteCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
+	rootCmd.SilenceUsage = true
+	rootCmd.SilenceErrors = true
 	rootCmd.AddCommand(versionCmd, configCmd, doctorCmd, serverCmd, sshCmd, listCmd, apiCmd, auditCmd, completionCmd, shellCmd)
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		PrintError(err)
 		os.Exit(1)
 	}
 }
