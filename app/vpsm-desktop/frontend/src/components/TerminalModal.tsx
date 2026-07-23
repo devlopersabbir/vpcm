@@ -193,11 +193,42 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, i
 
     window.addEventListener('resize', handleResize);
 
+    // Listen for menu zoom events from Wails native menu
+    const zoomInOff = window.runtime?.EventsOn('terminal:zoom_in', () => {
+      if (xtermRef.current) {
+        const curSize = xtermRef.current.options.fontSize || 14;
+        if (curSize < 32) {
+          xtermRef.current.options.fontSize = curSize + 2;
+          syncFit();
+        }
+      }
+    });
+
+    const zoomOutOff = window.runtime?.EventsOn('terminal:zoom_out', () => {
+      if (xtermRef.current) {
+        const curSize = xtermRef.current.options.fontSize || 14;
+        if (curSize > 8) {
+          xtermRef.current.options.fontSize = curSize - 2;
+          syncFit();
+        }
+      }
+    });
+
+    const zoomResetOff = window.runtime?.EventsOn('terminal:zoom_reset', () => {
+      if (xtermRef.current) {
+        xtermRef.current.options.fontSize = 14;
+        syncFit();
+      }
+    });
+
     // Auto start session immediately
     startSession(server.auth_secret || '');
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      zoomInOff?.();
+      zoomOutOff?.();
+      zoomResetOff?.();
       if (sessionIdRef.current && window.go?.main?.App) {
         window.go.main.App.CloseSSHTerminal(sessionIdRef.current).catch(() => {});
       }

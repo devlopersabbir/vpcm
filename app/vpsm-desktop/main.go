@@ -7,8 +7,11 @@ import (
 	"os"
 
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -66,10 +69,44 @@ func main() {
 		}
 	}
 
+	// Create native application menu
+	appMenu := menu.NewMenu()
+
+	// macOS default App menu
+	appMenu.Append(menu.AppMenu())
+
+	// View / Terminal Menu
+	viewMenu := appMenu.AddSubmenu("View")
+	viewMenu.AddText("Zoom In (Increase Font)", keys.CmdOrCtrl("+"), func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.EventsEmit(app.ctx, "terminal:zoom_in")
+		}
+	})
+	viewMenu.AddText("Zoom Out (Decrease Font)", keys.CmdOrCtrl("-"), func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.EventsEmit(app.ctx, "terminal:zoom_out")
+		}
+	})
+	viewMenu.AddText("Reset Font Size", keys.CmdOrCtrl("0"), func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.EventsEmit(app.ctx, "terminal:zoom_reset")
+		}
+	})
+	viewMenu.AddSeparator()
+	viewMenu.AddText("Toggle Fullscreen", keys.Key("f"), func(cd *menu.CallbackData) {
+		if app.ctx != nil {
+			runtime.WindowToggleMaximise(app.ctx)
+		}
+	})
+
+	// Edit menu for Cut/Copy/Paste
+	appMenu.Append(menu.EditMenu())
+
 	err := wails.Run(&options.App{
 		Title:  title,
 		Width:  width,
 		Height: height,
+		Menu:   appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
