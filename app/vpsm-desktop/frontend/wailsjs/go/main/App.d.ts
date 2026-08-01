@@ -22,6 +22,8 @@ export function GetTerminalInitialParams():Promise<Record<string, any>>;
 
 export function GetTerminalPreference():Promise<inventory.TerminalPreference>;
 
+export function OpenNativeOSTerminal(arg1:number,arg2:main.SSHConnectionParams):Promise<void>;
+
 export function OpenStandaloneTerminalWindow(arg1:number,arg2:main.SSHConnectionParams):Promise<void>;
 
 export function ResizeSSHTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;

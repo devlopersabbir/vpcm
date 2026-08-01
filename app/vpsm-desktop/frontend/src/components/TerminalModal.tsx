@@ -28,6 +28,7 @@ declare global {
           ResizeSSHTerminal: (sessionId: string, rows: number, cols: number) => Promise<void>;
           CloseSSHTerminal: (sessionId: string) => Promise<void>;
           OpenStandaloneTerminalWindow?: (serverID: number, params: any) => Promise<void>;
+          OpenNativeOSTerminal?: (serverID: number, params: any) => Promise<void>;
           GetTerminalInitialParams?: () => Promise<any>;
           GetTerminalPreference?: () => Promise<any>;
           SaveTerminalPreference?: (pref: any) => Promise<void>;
@@ -324,6 +325,23 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, i
     }
   };
 
+  const handleOpenNativeOSTerminal = () => {
+    if (window.go?.main?.App?.OpenNativeOSTerminal) {
+      window.go.main.App.OpenNativeOSTerminal(
+        server.id || 0,
+        {
+          Host: server.host,
+          Port: server.port || 22,
+          Username: server.username || 'root',
+          AuthType: server.auth_type || 'password',
+          AuthSecret: server.auth_secret || '',
+        }
+      ).catch((err) => {
+        console.error('Failed to open native OS terminal:', err);
+      });
+    }
+  };
+
   if (isStandaloneWindow) {
     return (
       <div
@@ -417,10 +435,22 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ server, onClose, i
               <button
                 onClick={handleOpenStandaloneWindow}
                 className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-slate-950 border border-cyan-500/20 rounded-lg text-xs font-black transition-all shadow-sm"
-                title="Open as Standalone Desktop Window (Alacritty Style)"
+                title="Open as Standalone Desktop Window"
               >
                 <AppWindow className="w-3.5 h-3.5" />
                 <span>Window</span>
+              </button>
+            )}
+
+            {/* Native OS Terminal Button */}
+            {!isStandaloneWindow && (
+              <button
+                onClick={handleOpenNativeOSTerminal}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-lg text-xs font-black transition-all shadow-sm"
+                title="Open in System Native Terminal (Windows Terminal/PowerShell/CMD on Windows, Terminal.app on Mac)"
+              >
+                <TerminalIcon className="w-3.5 h-3.5" />
+                <span>OS Terminal</span>
               </button>
             )}
 

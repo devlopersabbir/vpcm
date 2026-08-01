@@ -28,18 +28,18 @@ var (
 )
 
 func main() {
-	// Parse CLI flags for standalone terminal window mode
-	flag.UintVar(&termServerID, "terminal-server-id", 0, "Terminal server ID")
-	flag.StringVar(&termHost, "terminal-host", "", "Terminal host IP/address")
-	flag.StringVar(&termName, "terminal-name", "", "Terminal server display name")
-	flag.IntVar(&termPort, "terminal-port", 22, "Terminal port")
-	flag.StringVar(&termUser, "terminal-user", "root", "Terminal username")
-	flag.StringVar(&termAuthType, "terminal-authtype", "password", "Terminal auth type")
-	flag.StringVar(&termAuthSecret, "terminal-authsecret", "", "Terminal auth secret")
+	// Parse CLI flags for standalone terminal window mode without exiting on unknown flags
+	fs := flag.NewFlagSet("vpsm-desktop", flag.ContinueOnError)
+	fs.UintVar(&termServerID, "terminal-server-id", 0, "Terminal server ID")
+	fs.StringVar(&termHost, "terminal-host", "", "Terminal host IP/address")
+	fs.StringVar(&termName, "terminal-name", "", "Terminal server display name")
+	fs.IntVar(&termPort, "terminal-port", 22, "Terminal port")
+	fs.StringVar(&termUser, "terminal-user", "root", "Terminal username")
+	fs.StringVar(&termAuthType, "terminal-authtype", "password", "Terminal auth type")
+	fs.StringVar(&termAuthSecret, "terminal-authsecret", "", "Terminal auth secret")
 
-	// Avoid breaking when standard args are passed
 	if len(os.Args) > 1 {
-		flag.CommandLine.Parse(os.Args[1:])
+		_ = fs.Parse(os.Args[1:])
 	}
 
 	app := NewApp()

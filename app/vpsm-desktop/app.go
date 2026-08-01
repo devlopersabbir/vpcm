@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/config"
@@ -341,6 +342,59 @@ func (a *App) OpenStandaloneTerminalWindow(serverID uint, params SSHConnectionPa
 	cmd := exec.Command(execPath, args...)
 	cmd.Env = os.Environ()
 	return cmd.Start()
+}
+
+// OpenNativeOSTerminal opens the server in the host's native OS terminal application (Windows Terminal/PowerShell/CMD on Windows, Terminal.app on Mac, gnome-terminal/xterm on Linux)
+func (a *App) OpenNativeOSTerminal(serverID uint, params SSHConnectionParams) error {
+	host := params.Host
+	port := params.Port
+	if port == 0 {
+		port = 22
+	}
+	user := params.Username
+	if user == "" {
+		user = "root"
+	}
+
+	sshCmd := fmt.Sprintf("vpcm ssh %s@%s -p %d", user, host, port)
+
+	switch runtime.GOOS {
+	case "windows":
+		// Try Windows Terminal (wt.exe), fallback to powershell, fallback to cmd
+		if _, err := exec.LookPath("wt.exe"); err == nil {
+			cmd := exec.Command("wt.exe", "powershell", "-NoExit", "-Command", sshCmd)
+			return cmd.Start()
+		}
+		if _, err := exec.LookPath("powershell.exe"); err == nil {
+			cmd := exec.Command("cmd.exe", "/c", "start", "powershell", "-NoExit", "-Command", sshCmd)
+			return cmd.Start()
+		}
+		cmd := exec.Command("cmd.exe", "/c", "start", "cmd.exe", "/k", sshCmd)
+		return cmd.Start()
+
+	case "darwin":
+		script := fmt.Sprintf(`tell application "Terminal" to do script "%s"`, sshCmd)
+		cmd := exec.Command("osascript", "-e", script)
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+		return exec.Command("osascript", "-e", `tell application "Terminal" to activate`).Run()
+
+	default: // Linux
+		terminals := []string{"x-terminal-emulator", "gnome-terminal", "konsole", "xfce4-terminal", "alacritty", "kitty", "xterm"}
+		for _, term := range terminals {
+			if _, err := exec.LookPath(term); err == nil {
+				var cmd *exec.Cmd
+				if term == "gnome-terminal" || term == "xfce4-terminal" {
+					cmd = exec.Command(term, "--", "bash", "-c", sshCmd+"; exec bash")
+				} else {
+					cmd = exec.Command(term, "-e", "bash", "-c", sshCmd+"; exec bash")
+				}
+				return cmd.Start()
+			}
+		}
+		return fmt.Errorf("no supported terminal emulator found")
+	}
 }
 
 // GetTerminalInitialParams returns initial params if app was launched as terminal-only window

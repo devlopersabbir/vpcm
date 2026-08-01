@@ -38,6 +38,10 @@ export function GetTerminalPreference() {
   return window['go']['main']['App']['GetTerminalPreference']();
 }
 
+export function OpenNativeOSTerminal(arg1, arg2) {
+  return window['go']['main']['App']['OpenNativeOSTerminal'](arg1, arg2);
+}
+
 export function OpenStandaloneTerminalWindow(arg1, arg2) {
   return window['go']['main']['App']['OpenStandaloneTerminalWindow'](arg1, arg2);
 }
