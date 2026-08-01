@@ -18,6 +18,18 @@ curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/in
 irm https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.ps1 | iex
 ```
 
+### One-liner Uninstaller
+
+**Linux / macOS (or Git Bash):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/uninstall.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/uninstall.ps1 | iex
+```
+
 ### Build from Source
 
 Ensure you have Go 1.25+ installed:

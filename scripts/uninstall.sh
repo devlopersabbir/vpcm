@@ -105,7 +105,7 @@ done
 
 # Confirm uninstallation if not auto-confirmed
 if [ "$AUTO_CONFIRM" != "y" ]; then
-    if [ -t 0 ] && [ -c /dev/tty ]; then
+    if [ -c /dev/tty ]; then
         printf "%sWarning:%s This will permanently remove VPSM (vpsm/vpcm/vpsmd/vpsm-api) from your system.\n" "${YELLOW}${BOLD}" "${NORMAL}"
         read -p "Are you sure you want to uninstall? [y/N]: " CONFIRM < /dev/tty
         CONFIRM=${CONFIRM:-"n"}
@@ -137,7 +137,7 @@ fi
 
 # Prompt for wrapper removal if not auto-confirmed
 if [ "$AUTO_CONFIRM" != "y" ] && [ "$REMOVE_WRAPPER" = "y" ]; then
-    if [ -t 0 ] && [ -c /dev/tty ]; then
+    if [ -c /dev/tty ]; then
         read -p "Remove the VPSM ssh wrapper from your shell profiles? [Y/n]: " RM_WRAP < /dev/tty
         REMOVE_WRAPPER=${RM_WRAP:-"y"}
     fi
@@ -203,6 +203,8 @@ if [[ "$REMOVE_WRAPPER" =~ ^[Yy]$ ]]; then
     info "Removing shell wrappers..."
     remove_wrapper_from_file "$HOME/.zshrc"
     remove_wrapper_from_file "$HOME/.bashrc"
+    remove_wrapper_from_file "$HOME/.bash_profile"
+    remove_wrapper_from_file "$HOME/.profile"
 fi
 
 # Remove local config and data directories

@@ -30,6 +30,18 @@ curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/in
 irm https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/install.ps1 | iex
 ```
 
+**Uninstallation:**
+
+*Linux / macOS (Bash):*
+```bash
+curl -fsSL https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/uninstall.sh | bash
+```
+
+*Windows (PowerShell):*
+```powershell
+irm https://raw.githubusercontent.com/devlopersabbir/vpcm/main/scripts/uninstall.ps1 | iex
+```
+
 **Build From Source:**
 Alternatively, compile from source:
 ```bash
