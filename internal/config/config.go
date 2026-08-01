@@ -27,12 +27,13 @@ type DatabaseConfig struct {
 }
 
 type APIConfig struct {
-	Enabled   bool   `mapstructure:"enabled"`
-	Host      string `mapstructure:"host"`
-	Port      int    `mapstructure:"port"`
-	Mode      string `mapstructure:"mode"`       // "local" or "cloud"
-	Token     string `mapstructure:"token"`      // cloud API auth token
-	GlobalURL string `mapstructure:"global_url"` // SaaS API base URL
+	Enabled       bool   `mapstructure:"enabled"`
+	Host          string `mapstructure:"host"`
+	Port          int    `mapstructure:"port"`
+	Mode          string `mapstructure:"mode"`       // "local" or "cloud"
+	Token         string `mapstructure:"token"`      // cloud API auth token
+	GlobalURL     string `mapstructure:"global_url"` // SaaS API base URL
+	GuardPassword string `mapstructure:"guard_password"`
 }
 
 type SSHConfig struct {
@@ -71,6 +72,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("api.mode", "local")
 	viper.SetDefault("api.token", "")
 	viper.SetDefault("api.global_url", "https://api.vpsm.dev")
+	viper.SetDefault("api.guard_password", "")
 	viper.SetDefault("ssh.timeout", 10*time.Second)
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "pretty")
@@ -123,6 +125,7 @@ func Save(cfg *Config) error {
 	viper.Set("api.mode", cfg.API.Mode)
 	viper.Set("api.token", cfg.API.Token)
 	viper.Set("api.global_url", cfg.API.GlobalURL)
+	viper.Set("api.guard_password", cfg.API.GuardPassword)
 	viper.Set("ssh.timeout", cfg.SSH.Timeout)
 	viper.Set("logging.level", cfg.Logging.Level)
 	viper.Set("logging.format", cfg.Logging.Format)

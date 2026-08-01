@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"time"
 
+	"github.com/devlopersabbir/vpcm/internal/config"
 	"github.com/devlopersabbir/vpcm/internal/inventory"
 	"github.com/devlopersabbir/vpcm/internal/notes"
 	"github.com/gin-gonic/gin"
@@ -54,6 +56,8 @@ func (s *Server) setupRoutes() {
 
 	s.router.GET("/terminal/preferences", s.handleGetTerminalPreferences)
 	s.router.POST("/terminal/preferences", s.handleSaveTerminalPreferences)
+
+	s.router.POST("/verify-cloud-access", s.handleVerifyCloudGuard)
 }
 
 func (s *Server) Start(host string, port int) error {
@@ -261,3 +265,44 @@ func LoggerMiddleware() gin.HandlerFunc {
 		}
 	}
 }
+
+type verifyCloudGuardRequest struct {
+	Password string `json:"password"`
+}
+
+func (s *Server) handleVerifyCloudGuard(c *gin.Context) {
+	var req verifyCloudGuardRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"valid": false, "message": "Invalid request body"})
+		return
+	}
+
+	expectedPass := os.Getenv("CLOUD_GUARD_PASSWORD")
+	if expectedPass == "" {
+		cfg, err := config.Load()
+		if err == nil && cfg.API.GuardPassword != "" {
+			expectedPass = cfg.API.GuardPassword
+		}
+	}
+
+	if expectedPass == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"valid":   false,
+			"message": "Cloud guard password is not configured on server (CLOUD_GUARD_PASSWORD env var missing)",
+		})
+		return
+	}
+
+	if req.Password == expectedPass {
+		c.JSON(http.StatusOK, gin.H{
+			"valid":   true,
+			"message": "Cloud access authorized",
+		})
+	} else {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"valid":   false,
+			"message": "Invalid Cloud access password",
+		})
+	}
+}
+

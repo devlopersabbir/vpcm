@@ -73,3 +73,7 @@ export function StartSSHTerminal(arg1) {
 export function ToggleFavorite(arg1) {
   return window['go']['main']['App']['ToggleFavorite'](arg1);
 }
+
+export function VerifyCloudPassword(arg1, arg2) {
+  return window['go']['main']['App']['VerifyCloudPassword'](arg1, arg2);
+}

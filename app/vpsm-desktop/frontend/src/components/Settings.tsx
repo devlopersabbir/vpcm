@@ -1,5 +1,6 @@
-import React from "react";
-import { Database, Terminal, Shield, Monitor } from "lucide-react";
+import React, { useState } from "react";
+import { Database, Terminal, Monitor } from "lucide-react";
+import CloudPasswordModal from "./CloudPasswordModal";
 
 interface SettingsProps {
   config: any;
@@ -8,6 +9,9 @@ interface SettingsProps {
 }
 
 export default function Settings({ config, setConfig, onSave }: SettingsProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   if (!config) return null;
 
   const maskCloudHost = (val: string) => {
@@ -23,7 +27,8 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           Database & Engine Settings
         </h1>
         <p className="text-slate-400 text-xs mt-1 font-medium">
-          Configure database storage drivers, central API endpoint URLs, and collector thread workers.
+          Configure database storage drivers, central API endpoint URLs, and
+          collector thread workers.
         </p>
       </div>
 
@@ -44,14 +49,26 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                 <select
                   value={config.Database.Driver}
                   onChange={(e) => {
-                    const updated = { ...config };
-                    updated.Database.Driver = e.target.value;
-                    setConfig(updated);
+                    const targetVal = e.target.value;
+                    if (targetVal === "mongodb") {
+                      setPendingAction(() => () => {
+                        const updated = { ...config };
+                        updated.Database.Driver = targetVal;
+                        setConfig(updated);
+                      });
+                      setIsModalOpen(true);
+                    } else {
+                      const updated = { ...config };
+                      updated.Database.Driver = targetVal;
+                      setConfig(updated);
+                    }
                   }}
                   className="w-full rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none glass-input font-medium"
                 >
                   <option value="sqlite">SQLite (Local File Storage)</option>
-                  <option value="mongodb">MongoDB (Cloud / Remote Server)</option>
+                  <option value="mongodb">
+                    MongoDB (Cloud / Remote Server)
+                  </option>
                 </select>
               </div>
 
@@ -138,11 +155,14 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        const updated = { ...config };
-                        updated.API.GlobalURL = "http://187.77.151.75:8080";
-                        setConfig(updated);
+                        setPendingAction(() => () => {
+                          const updated = { ...config };
+                          updated.API.GlobalURL = "http://187.77.151.75:8080";
+                          setConfig(updated);
+                        });
+                        setIsModalOpen(true);
                       }}
-                      className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 border border-indigo-800/40 px-2.5 py-0.5 rounded-md transition-all"
+                      className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 border border-indigo-800/40 px-2.5 py-0.5 rounded-md transition-all flex items-center space-x-1"
                     >
                       Set Cloud Default
                     </button>
@@ -160,7 +180,8 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   className="w-full rounded-xl px-3.5 py-2 text-sm text-slate-200 font-mono focus:outline-none glass-input"
                 />
                 <p className="text-[11px] text-slate-500 mt-1 font-medium">
-                  Cloud host IPs in settings preview are masked (`187.***.***.75`) for security.
+                  Cloud host IPs in settings preview are masked
+                  (`187.***.***.75`) for security.
                 </p>
               </div>
 
@@ -235,6 +256,22 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           Re-run Onboarding Wizard
         </button>
       </div>
+
+      <CloudPasswordModal
+        isOpen={isModalOpen}
+        targetURL={config.API?.GlobalURL || "http://187.77.151.75:8080"}
+        onClose={() => {
+          setIsModalOpen(false);
+          setPendingAction(null);
+        }}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          if (pendingAction) {
+            pendingAction();
+            setPendingAction(null);
+          }
+        }}
+      />
     </div>
   );
 }

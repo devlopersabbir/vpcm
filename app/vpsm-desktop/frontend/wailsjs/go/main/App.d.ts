@@ -39,3 +39,5 @@ export function SendSSHTerminalInput(arg1:string,arg2:string):Promise<void>;
 export function StartSSHTerminal(arg1:main.SSHConnectionParams):Promise<string>;
 
 export function ToggleFavorite(arg1:number):Promise<boolean>;
+
+export function VerifyCloudPassword(arg1:string,arg2:string):Promise<boolean>;
