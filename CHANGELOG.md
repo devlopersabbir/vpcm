@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.1.6] - 2026-08-01
+
+* chore: bump version to v1.1.5 and update snap version extraction path (e8034d1)
+* feat: add OpenNativeOSTerminal support and update flag parsing in main entry point (a4b5208)
+
+
 ## [v1.1.5] - 2026-08-01
 
 * chore: bump version to v1.1.4 and refactor Makefile installation and uninstallation logic (0f2b5be)
