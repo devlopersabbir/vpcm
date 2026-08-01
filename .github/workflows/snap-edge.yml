@@ -39,7 +39,7 @@ jobs:
 
       - name: Inject Version into snapcraft.yaml
         run: |
-          CURRENT_VERSION=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' cli/cli.go | head -n 1)
+          CURRENT_VERSION=$(grep 'var Version =' internal/version/version.go | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
           sed -i "s/version: 'latest'/version: '$CURRENT_VERSION'/g" snap/snapcraft.yaml
 
       - name: Build Snap Package

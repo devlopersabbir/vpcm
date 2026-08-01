@@ -34,8 +34,8 @@ jobs:
         id: bump
         run: |
           # ── Single source of truth: internal/version/version.go ──
-          # Read current version from the version package (strip quotes and 'v' prefix for math)
-          CURRENT_VERSION=$(grep -oP '(?<=Version = ")v[^"]+' internal/version/version.go)
+          # Read current version from the version package
+          CURRENT_VERSION=$(grep 'var Version =' internal/version/version.go | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
           echo "Current version: $CURRENT_VERSION"
 
           VERSION_NUM=${CURRENT_VERSION#v}
@@ -466,12 +466,19 @@ jobs:
 
       - name: Apply Version Changes
         run: |
-          # Commit only the bumped version.go — single source of truth
+          # Fetch latest main and rebase to prevent non-fast-forward push failure
+          git fetch origin main
+          git rebase origin/main || git merge origin/main --no-edit || true
+
+          # Apply bumped version.go and updated CHANGELOG.md
           cp dist/release-info/version.go internal/version/version.go || true
           cp dist/release-info/CHANGELOG.md CHANGELOG.md || true
           git add internal/version/version.go CHANGELOG.md
-          git commit -m "chore: bump version to ${{ needs.bump-version.outputs.new_version }} [skip ci]" || true
-          git push origin main || true
+
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: bump version to ${{ needs.bump-version.outputs.new_version }} [skip ci]"
+            git push origin main
+          fi
 
       - name: Create Git Tag
         run: |
