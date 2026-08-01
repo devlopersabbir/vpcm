@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.1.5] - 2026-08-01
+
+* chore: bump version to v1.1.4 and refactor Makefile installation and uninstallation logic (0f2b5be)
+* feat: add uninstallation documentation and improve uninstall script compatibility and coverage (fbd797c)
+* chore: bump version to v1.1.4 [skip ci] (729a0de)
+* fix: remove categories field from snapcraft.yaml (not valid for core22 base) (18fd9fe)
+
+
 ## [v1.1.4] - 2026-07-23
 
 * fix: remove categories field from snapcraft.yaml (not valid for core22 base) (18fd9fe)
