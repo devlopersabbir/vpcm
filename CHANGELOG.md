@@ -2,6 +2,11 @@
 
 ## [v1.1.6] - 2026-08-01
 
+* feat: implement configuration management and cloud authentication guard for desktop application (082d0c4)
+
+
+## [v1.1.6] - 2026-08-01
+
 * chore: bump version to v1.1.5 and update snap version extraction path (e8034d1)
 * feat: add OpenNativeOSTerminal support and update flag parsing in main entry point (a4b5208)
 
