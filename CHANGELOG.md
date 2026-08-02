@@ -2,6 +2,13 @@
 
 ## [v1.1.10] - 2026-08-02
 
+* Merge branch 'dev' (c311dee)
+* Merge branch 'dev' of github.com:devlopersabbir/vpcm into dev (a5ebd76)
+* refactor: remove redundant comments and add universal macOS build support to release workflow (3eb8e83)
+
+
+## [v1.1.10] - 2026-08-02
+
 * Merge pull request #2 from devlopersabbir/dev (a8986d7)
 * Merge pull request #1 from devlopersabbir/sabbir (a02d45e)
 * chore: bump version to v1.1.9 (3208e91)
