@@ -22,7 +22,8 @@ Most VPS managers are either bloated web interfaces or simple SSH alias files th
 
 **macOS Desktop App (Homebrew Cask):**
 ```bash
-brew install --cask devlopersabbir/tap/vpsm-desktop
+brew tap devlopersabbir/vpcm git@github.com:devlopersabbir/vpcm.git
+brew install --cask vpsm-desktop
 ```
 
 **Linux / macOS CLI (Bash):**
