@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.1.12] - 2026-08-02
+
+* feat: add Homebrew Cask for VPSM Desktop and update installation instructions in README (1c1bd3b)
+
+
 ## [v1.1.11] - 2026-08-02
 
 * Merge branch 'main' of github.com:devlopersabbir/vpcm (ed4084e)
