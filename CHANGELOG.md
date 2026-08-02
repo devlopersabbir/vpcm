@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.1.9] - 2026-08-02
+
+* refactor: update macOS signing script to output verbose verification details instead of a summary status (2a4f955)
+* feat: add code signing for Windows/macOS, update desktop integration, and bump version to v1.1.8 (fb198d4)
+
+
 ## [v1.1.8] - 2026-08-02
 
 * Merge branch 'dev' (8f19878)
