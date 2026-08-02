@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.1.13] - 2026-08-02
+
+* refactor: move vpsm-desktop cask definition to Casks directory and update README installation instructions (54bdfb5)
+
+
 ## [v1.1.12] - 2026-08-02
 
 * feat: add Homebrew Cask for VPSM Desktop and update installation instructions in README (1c1bd3b)
