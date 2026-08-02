@@ -2,6 +2,7 @@
 
 ## [v1.1.13] - 2026-08-02
 
+* Delete .DS_Store (7bf6828)
 * refactor: move vpsm-desktop cask definition to Casks directory and update README installation instructions (54bdfb5)
 
 
