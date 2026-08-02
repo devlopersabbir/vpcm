@@ -1,7 +1,10 @@
 # Changelog
 
-## [v1.1.9] - 2026-08-02
+## [v1.1.10] - 2026-08-02
 
+* Merge pull request #2 from devlopersabbir/dev (a8986d7)
+* Merge pull request #1 from devlopersabbir/sabbir (a02d45e)
+* chore: bump version to v1.1.9 (3208e91)
 * refactor: update macOS signing script to output verbose verification details instead of a summary status (2a4f955)
 * feat: add code signing for Windows/macOS, update desktop integration, and bump version to v1.1.8 (fb198d4)
 
