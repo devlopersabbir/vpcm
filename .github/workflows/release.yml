@@ -9,9 +9,6 @@ permissions:
   contents: write
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # 1. Bump patch version, generate release notes, upload artifacts
-  # ─────────────────────────────────────────────────────────────
   bump-version:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
@@ -33,8 +30,6 @@ jobs:
       - name: Bump Version
         id: bump
         run: |
-          # ── Single source of truth: internal/version/version.go ──
-          # Read current version from the version package
           CURRENT_VERSION=$(grep 'var Version =' internal/version/version.go | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
           echo "Current version: $CURRENT_VERSION"
 
@@ -44,14 +39,11 @@ jobs:
           NEW_VERSION="v$major.$minor.$new_patch"
           echo "New version: $NEW_VERSION"
 
-          # Update ONLY internal/version/version.go — this is the single source
           sed -i "s|var Version = \".*\"|var Version = \"$NEW_VERSION\"|" internal/version/version.go
 
-          # Build the ldflags string used by ALL go build commands
           LDFLAGS="-s -w -X github.com/devlopersabbir/vpcm/internal/version.Version=$NEW_VERSION"
           echo "ldflags=$LDFLAGS" >> $GITHUB_OUTPUT
 
-          # Generate release notes
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
             COMMIT_LOGS=$(git log --pretty=format:"* %s (%h)" ${PREV_TAG}..HEAD)
@@ -85,11 +77,9 @@ jobs:
           path: |
             release_notes.md
             internal/version/version.go
+            app/vpsm-desktop/wails.json
             CHANGELOG.md
 
-  # ─────────────────────────────────────────────────────────────
-  # 2. Cross-compile CLI binaries for all platforms
-  # ─────────────────────────────────────────────────────────────
   build-cli:
     runs-on: ubuntu-latest
     needs: bump-version
@@ -105,8 +95,6 @@ jobs:
 
       - name: Restore bumped version file
         run: |
-          # The bumped version.go was uploaded as an artifact — restore it so
-          # the ldflags injection has a consistent file on disk too
           cp version.go internal/version/version.go || true
 
       - name: Setup Go
@@ -128,7 +116,6 @@ jobs:
             fi
             output_name="vpsm-${goos}-${goarch}"
             mkdir -p "release/$output_name"
-            # Inject version into all three binaries via ldflags
             GOOS=$goos GOARCH=$goarch go build -ldflags="$LDFLAGS" -o "release/$output_name/vpsm$ext" ./cmd/vpsm
             GOOS=$goos GOARCH=$goarch go build -ldflags="$LDFLAGS" -o "release/$output_name/vpsmd$ext" ./cmd/vpsmd
             GOOS=$goos GOARCH=$goarch go build -ldflags="$LDFLAGS" -o "release/$output_name/vpsm-api$ext" ./cmd/vpsm-api
@@ -151,9 +138,6 @@ jobs:
           name: cli-binaries
           path: release/*
 
-  # ─────────────────────────────────────────────────────────────
-  # 3. Build Desktop app per OS with proper native installers
-  # ─────────────────────────────────────────────────────────────
   build-desktop:
     needs: bump-version
     strategy:
@@ -184,7 +168,6 @@ jobs:
         with:
           node-version: '20'
 
-      # ── Linux dependencies ──────────────────────────────────
       - name: Install Linux Build Dependencies
         if: matrix.platform == 'linux'
         run: |
@@ -197,33 +180,21 @@ jobs:
             libfuse2 \
             wget
 
-      # ── Install Wails ───────────────────────────────────────
       - name: Install Wails CLI
         shell: bash
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-      # ── Stamp version into wails.json before building ───────
-      # Wails reads info.productVersion to populate:
-      #   macOS  → CFBundleVersion & CFBundleShortVersionString in Info.plist
-      #   Windows → FileVersion / ProductVersion in .exe metadata + NSIS installer
-      # productVersion must be plain semver (no leading 'v'), e.g. "1.1.3"
       - name: Inject Version into wails.json
         shell: bash
         env:
           VERSION: ${{ needs.bump-version.outputs.new_version }}
         run: |
-          # Strip the leading 'v' — Wails expects "1.1.3" not "v1.1.3"
           PLAIN_VERSION="${VERSION#v}"
           echo "Setting wails.json productVersion to $PLAIN_VERSION"
-          # jq is pre-installed on all GitHub-hosted runners
           jq --arg v "$PLAIN_VERSION" '.info.productVersion = $v' \
             app/vpsm-desktop/wails.json > tmp.json && mv tmp.json app/vpsm-desktop/wails.json
-          echo "Updated wails.json:"
           cat app/vpsm-desktop/wails.json | grep productVersion
 
-      # ── Build the Wails app ─────────────────────────────────
-      # Wails passes -ldflags to the underlying go build via -ldflags flag.
-      # This stamps the version into the desktop binary at compile time.
       - name: Build Wails App (Linux / macOS)
         if: matrix.platform != 'windows'
         shell: bash
@@ -232,12 +203,15 @@ jobs:
           VERSION: ${{ needs.bump-version.outputs.new_version }}
         run: |
           cd app/vpsm-desktop
-          # Restore the bumped version.go so wails picks it up via module
           mkdir -p ../../internal/version
           cp ../../internal/version/version.go ../../internal/version/version.go 2>/dev/null || true
-          ~/go/bin/wails build ${{ matrix.wails_tags }} -ldflags "$LDFLAGS"
+          if [ "${{ matrix.platform }}" = "darwin" ]; then
+            ~/go/bin/wails build -platform darwin/universal -ldflags "$LDFLAGS"
+          else
+            ~/go/bin/wails build ${{ matrix.wails_tags }} -ldflags "$LDFLAGS"
+          fi
 
-      - name: Build Wails App (Windows — NSIS installer)
+      - name: Build Wails App (Windows)
         if: matrix.platform == 'windows'
         shell: bash
         env:
@@ -247,14 +221,10 @@ jobs:
           cd app/vpsm-desktop
           ~/go/bin/wails build -nsis -ldflags "$LDFLAGS"
 
-      # ══════════════════════════════════════════════════════════
-      #  macOS — ad-hoc sign + create DMG
-      # ══════════════════════════════════════════════════════════
       - name: Ad-hoc Sign macOS App
         if: matrix.platform == 'darwin'
         shell: bash
         run: |
-          # Find the .app — Wails may use "vpsm-desktop.app" or "VPSM Desktop.app"
           APP_PATH=$(find app/vpsm-desktop/build/bin -name "*.app" -maxdepth 1 | head -n 1)
           if [ -z "$APP_PATH" ]; then
             echo "ERROR: No .app bundle found!"
@@ -262,14 +232,8 @@ jobs:
             exit 1
           fi
           echo "Found app: $APP_PATH"
-          # Ad-hoc sign — free, no Apple Developer account required.
-          # Prevents the "malware" Gatekeeper dialog. Users on strict SIP
-          # may still need System Settings → Privacy & Security → Open Anyway
-          # on first launch. For notarization, add APPLE_* secrets and use
-          # xcrun notarytool submit.
           codesign --deep --force --options runtime --sign - "$APP_PATH"
           codesign -dv --verbose=2 "$APP_PATH"
-          # Remove quarantine so the zip does not re-trigger Gatekeeper
           xattr -cr "$APP_PATH" || true
           echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
 
@@ -277,9 +241,7 @@ jobs:
         if: matrix.platform == 'darwin'
         shell: bash
         run: |
-          # Install create-dmg (brew available on macos-latest runners)
           brew install create-dmg || true
-
           APP_PATH="$APP_PATH"
           APP_NAME=$(basename "$APP_PATH" .app)
           DMG_NAME="vpsm-desktop-mac.dmg"
@@ -299,7 +261,6 @@ jobs:
             --no-internet-enable \
             "$DMG_NAME" \
             dmg-staging/ || {
-              # Fallback: plain hdiutil DMG if create-dmg fails
               echo "create-dmg failed, falling back to hdiutil..."
               hdiutil create -volname "VPSM Desktop" \
                 -srcfolder dmg-staging \
@@ -310,15 +271,11 @@ jobs:
           mkdir -p dist
           mv "$DMG_NAME" dist/
 
-      # ══════════════════════════════════════════════════════════
-      #  Windows — collect NSIS .exe installer
-      # ══════════════════════════════════════════════════════════
       - name: Collect Windows Installer
         if: matrix.platform == 'windows'
         shell: bash
         run: |
           mkdir -p dist
-          # Wails -nsis generates *-installer.exe in build/bin
           INSTALLER=$(find app/vpsm-desktop/build/bin -name "*installer*.exe" | head -n 1)
           if [ -n "$INSTALLER" ]; then
             echo "Found installer: $INSTALLER"
@@ -326,24 +283,17 @@ jobs:
           else
             echo "No NSIS installer found, packaging raw exe..."
             find app/vpsm-desktop/build/bin -name "*.exe" | head -5
-            # Fallback zip
             powershell -Command "Compress-Archive -Path app/vpsm-desktop/build/bin/* -DestinationPath dist/vpsm-desktop-windows.zip"
           fi
 
-      # ══════════════════════════════════════════════════════════
-      #  Linux — build .deb package + AppImage
-      # ══════════════════════════════════════════════════════════
       - name: Build Linux .deb Package
         if: matrix.platform == 'linux'
         shell: bash
         run: |
           mkdir -p dist
-
-          # Locate the built binary
           BIN=$(find app/vpsm-desktop/build/bin -type f -not -name "*.so" | head -n 1)
           echo "Binary: $BIN"
 
-          # Build a minimal .deb structure
           PKG_DIR="vpsm-desktop_amd64"
           mkdir -p "$PKG_DIR/DEBIAN"
           mkdir -p "$PKG_DIR/usr/bin"
@@ -353,11 +303,9 @@ jobs:
           cp "$BIN" "$PKG_DIR/usr/bin/vpsm-desktop"
           chmod 755 "$PKG_DIR/usr/bin/vpsm-desktop"
 
-          # Copy icon
           cp app/vpsm-desktop/build/appicon.png \
             "$PKG_DIR/usr/share/icons/hicolor/256x256/apps/vpsm-desktop.png" || true
 
-          # .desktop entry
           cat > "$PKG_DIR/usr/share/applications/vpsm-desktop.desktop" <<'EOF'
           [Desktop Entry]
           Name=VPSM Desktop
@@ -370,9 +318,8 @@ jobs:
           StartupNotify=true
           EOF
 
-          # DEBIAN/control
           VERSION="${{ needs.bump-version.outputs.new_version }}"
-          VERSION="${VERSION#v}"  # strip leading 'v'
+          VERSION="${VERSION#v}"
           cat > "$PKG_DIR/DEBIAN/control" <<EOF
           Package: vpsm-desktop
           Version: $VERSION
@@ -395,14 +342,12 @@ jobs:
         if: matrix.platform == 'linux'
         shell: bash
         run: |
-          # Download appimagetool
           wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" \
             -O /tmp/appimagetool
           chmod +x /tmp/appimagetool
 
           BIN=$(find app/vpsm-desktop/build/bin -type f -not -name "*.so" | head -n 1)
 
-          # Build AppDir structure
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
 
@@ -428,23 +373,18 @@ jobs:
           EOF
           chmod +x AppDir/AppRun
 
-          # Build AppImage (FUSE not available in CI, use --appimage-extract-and-run)
           ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run AppDir \
             dist/VPSM-Desktop-x86_64.AppImage || {
             echo "AppImage build failed, skipping."
           }
           ls -lh dist/ || true
 
-      # ── Upload artifacts for all platforms ──────────────────
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: desktop-binaries-${{ matrix.platform }}
           path: dist/*
 
-  # ─────────────────────────────────────────────────────────────
-  # 4. Create GitHub Release and attach all installers
-  # ─────────────────────────────────────────────────────────────
   create-release:
     runs-on: ubuntu-latest
     needs: [bump-version, build-cli, build-desktop]
@@ -466,14 +406,27 @@ jobs:
 
       - name: Apply Version Changes
         run: |
-          # Fetch latest main and rebase to prevent non-fast-forward push failure
           git fetch origin main
-          git rebase origin/main || git merge origin/main --no-edit || true
+          git checkout main
+          git reset --hard origin/main
 
-          # Apply bumped version.go and updated CHANGELOG.md
-          cp dist/release-info/version.go internal/version/version.go || true
-          cp dist/release-info/CHANGELOG.md CHANGELOG.md || true
-          git add internal/version/version.go CHANGELOG.md
+          if [ -f dist/release-info/internal/version/version.go ]; then
+            cp dist/release-info/internal/version/version.go internal/version/version.go
+          elif [ -f dist/release-info/version.go ]; then
+            cp dist/release-info/version.go internal/version/version.go
+          fi
+
+          if [ -f dist/release-info/app/vpsm-desktop/wails.json ]; then
+            cp dist/release-info/app/vpsm-desktop/wails.json app/vpsm-desktop/wails.json
+          elif [ -f dist/release-info/wails.json ]; then
+            cp dist/release-info/wails.json app/vpsm-desktop/wails.json
+          fi
+
+          if [ -f dist/release-info/CHANGELOG.md ]; then
+            cp dist/release-info/CHANGELOG.md CHANGELOG.md
+          fi
+
+          git add internal/version/version.go app/vpsm-desktop/wails.json CHANGELOG.md
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: bump version to ${{ needs.bump-version.outputs.new_version }} [skip ci]"
@@ -488,13 +441,9 @@ jobs:
       - name: Stage Release Files
         run: |
           mkdir -p upload
-          # CLI archives
           find dist/cli-binaries -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec cp {} upload/ \;
-          # macOS DMG
           find dist/desktop-binaries-darwin -type f -name "*.dmg" -exec cp {} upload/ \;
-          # Windows NSIS installer + fallback zip
           find dist/desktop-binaries-windows -type f \( -name "*.exe" -o -name "*.zip" \) -exec cp {} upload/ \;
-          # Linux .deb + AppImage + fallback tar.gz
           find dist/desktop-binaries-linux -type f \( -name "*.deb" -o -name "*.AppImage" -o -name "*.tar.gz" \) -exec cp {} upload/ \;
           echo "=== Release assets ==="
           ls -lh upload/
