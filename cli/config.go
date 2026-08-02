@@ -127,7 +127,7 @@ var configInitCmd = &cobra.Command{
 		} else {
 			defaultURI := cfg.Database.URI
 			if defaultURI == "" {
-				defaultURI = "mongodb://187.77.151.75:27017"
+				defaultURI = "mongodb://127.0.0.1:27017"
 			}
 			fmt.Printf("Enter MongoDB Connection URI (default: %s): ", defaultURI)
 			var uri string
@@ -154,11 +154,11 @@ var configInitCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Print("Enable REST API server? [y/N] (default: n): ")
+		fmt.Print("Enable REST API server? [Y/n] (default: Y): ")
 		var enableAPI string
 		_, _ = fmt.Scanln(&enableAPI)
 		enableAPI = strings.ToLower(strings.TrimSpace(enableAPI))
-		if enableAPI == "y" || enableAPI == "yes" {
+		if enableAPI == "" || enableAPI == "y" || enableAPI == "yes" {
 			cfg.API.Enabled = true
 		} else {
 			cfg.API.Enabled = false

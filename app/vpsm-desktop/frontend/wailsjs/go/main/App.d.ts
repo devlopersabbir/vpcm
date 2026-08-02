@@ -38,6 +38,8 @@ export function SendSSHTerminalInput(arg1:string,arg2:string):Promise<void>;
 
 export function StartSSHTerminal(arg1:main.SSHConnectionParams):Promise<string>;
 
-export function ToggleFavorite(arg1:number):Promise<boolean>;
+export function TestAPIConnection(arg1:string):Promise<Record<string, any>>;
 
-export function VerifyCloudPassword(arg1:string,arg2:string):Promise<boolean>;
+export function TestDatabaseConnection(arg1:string,arg2:string,arg3:string,arg4:string):Promise<Record<string, any>>;
+
+export function ToggleFavorite(arg1:number):Promise<boolean>;

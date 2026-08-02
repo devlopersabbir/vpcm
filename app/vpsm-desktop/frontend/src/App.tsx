@@ -96,7 +96,7 @@ export default function App() {
       const res = await GetServers();
       if (res) setServers(res);
     } catch (err: any) {
-      showStatus("error", "Failed to fetch servers: " + err);
+      console.warn("Could not fetch servers:", err);
     } finally {
       setLoading(false);
     }
