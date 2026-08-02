@@ -70,10 +70,14 @@ export function StartSSHTerminal(arg1) {
   return window['go']['main']['App']['StartSSHTerminal'](arg1);
 }
 
-export function ToggleFavorite(arg1) {
-  return window['go']['main']['App']['ToggleFavorite'](arg1);
+export function TestAPIConnection(arg1) {
+  return window['go']['main']['App']['TestAPIConnection'](arg1);
 }
 
-export function VerifyCloudPassword(arg1, arg2) {
-  return window['go']['main']['App']['VerifyCloudPassword'](arg1, arg2);
+export function TestDatabaseConnection(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['TestDatabaseConnection'](arg1, arg2, arg3, arg4);
+}
+
+export function ToggleFavorite(arg1) {
+  return window['go']['main']['App']['ToggleFavorite'](arg1);
 }

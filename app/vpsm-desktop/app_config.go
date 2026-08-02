@@ -1,14 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/config"
+	"github.com/devlopersabbir/vpcm/internal/database"
 )
 
 // GetConfig returns the active settings
@@ -21,43 +22,59 @@ func (a *App) SaveConfig(cfg config.Config) error {
 	return config.Save(&cfg)
 }
 
-// VerifyCloudPassword checks password with the specified cloud target URL
-func (a *App) VerifyCloudPassword(targetURL string, password string) (bool, error) {
-	if targetURL == "" {
-		targetURL = a.getAPIURL()
-	}
-	url := fmt.Sprintf("%s/verify-cloud-access", targetURL)
-	payload := map[string]string{"password": password}
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return false, err
+// TestDatabaseConnection checks connection to SQLite or MongoDB based on provided settings
+func (a *App) TestDatabaseConnection(driver string, path string, uri string, dbName string) (map[string]interface{}, error) {
+	if driver == "mongodb" {
+		if uri == "" {
+			return map[string]interface{}{"success": false, "message": "MongoDB connection URI is empty"}, nil
+		}
+		if dbName == "" {
+			dbName = "vpsm"
+		}
+		db, err := database.InitMongo(uri, dbName)
+		if err != nil {
+			return map[string]interface{}{"success": false, "message": fmt.Sprintf("MongoDB connection failed: %v", err)}, nil
+		}
+		_ = db
+		return map[string]interface{}{"success": true, "message": "MongoDB connection successful!"}, nil
 	}
 
-	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+	// SQLite check
+	if path == "" {
+		path = filepath.Join(os.Getenv("HOME"), ".local", "share", "vpsm", "vpsm.db")
+	}
+	db, err := database.InitSQLite(path)
+	if err != nil {
+		return map[string]interface{}{"success": false, "message": fmt.Sprintf("SQLite connection failed: %v", err)}, nil
+	}
+	_ = db
+	return map[string]interface{}{"success": true, "message": "SQLite database path is valid and accessible!"}, nil
+}
+
+// TestAPIConnection checks HTTP connection to the API server endpoint
+func (a *App) TestAPIConnection(apiURL string) (map[string]interface{}, error) {
+	if apiURL == "" {
+		return map[string]interface{}{"success": false, "message": "API endpoint URL is empty"}, nil
+	}
+
+	ctx, cancel := context.WithTimeout(a.ctx, 5*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if err != nil {
-		return false, err
+		return map[string]interface{}{"success": false, "message": fmt.Sprintf("Invalid URL format: %v", err)}, nil
 	}
-	req.Header.Set("Content-Type", "application/json")
+	a.addAuthHeader(req)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("Unable to connect to Cloud API server: %v", err)
+		return map[string]interface{}{"success": false, "message": fmt.Sprintf("Unable to connect to API server: %v", err)}, nil
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		return true, nil
+	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+		return map[string]interface{}{"success": true, "message": fmt.Sprintf("API server reached successfully (HTTP %d)", resp.StatusCode)}, nil
 	}
 
-	var res struct {
-		Message string `json:"message"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&res); err == nil && res.Message != "" {
-		return false, fmt.Errorf("%s", res.Message)
-	}
-
-	return false, fmt.Errorf("Access denied (status: %d)", resp.StatusCode)
+	return map[string]interface{}{"success": false, "message": fmt.Sprintf("API server returned status HTTP %d", resp.StatusCode)}, nil
 }
