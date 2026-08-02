@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.1.11] - 2026-08-02
+
+* Merge branch 'main' of github.com:devlopersabbir/vpcm (ed4084e)
+* chore: bump version to v1.1.10 (89cabdb)
+* chore: bump version to v1.1.10 [skip ci] (17560fc)
+* Merge branch 'dev' (c311dee)
+* Merge branch 'dev' of github.com:devlopersabbir/vpcm into dev (a5ebd76)
+* refactor: remove redundant comments and add universal macOS build support to release workflow (3eb8e83)
+
+
 ## [v1.1.10] - 2026-08-02
 
 * Merge branch 'dev' (c311dee)
