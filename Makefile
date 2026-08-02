@@ -43,6 +43,14 @@ install: build
 		cat scripts/shell_wrapper.sh >> $$HOME/.bashrc; \
 		echo "Configured ~/.bashrc"; \
 	fi
+	@echo "Configuring default config..."
+	@CONFIG_DIR="$$HOME/.config/vpsm"; \
+	CONFIG_FILE="$$CONFIG_DIR/config.yaml"; \
+	if [ ! -f "$$CONFIG_FILE" ]; then \
+		mkdir -p "$$CONFIG_DIR" && \
+		printf "database:\n  driver: sqlite\n  path: $$HOME/.local/share/vpsm/vpsm.db\napi:\n  enabled: true\n  host: 127.0.0.1\n  port: 8080\n  mode: local\n  global_url: http://127.0.0.1:8080\nssh:\n  timeout: 10s\nlogging:\n  level: info\n  format: pretty\n" > "$$CONFIG_FILE"; \
+		echo "Auto-initialized default config in $$CONFIG_FILE"; \
+	fi
 	@echo "Installed vpsm, vpcm, vpsmd, and vpsm-api to /usr/local/bin"
 
 uninstall:

@@ -11,7 +11,7 @@ interface CloudPasswordModalProps {
 
 export default function CloudPasswordModal({
   isOpen,
-  targetURL = "http://187.77.151.75:8080",
+  targetURL = "http://127.0.0.1:8080",
   onClose,
   onSuccess,
 }: CloudPasswordModalProps) {

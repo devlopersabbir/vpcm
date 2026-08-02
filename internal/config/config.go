@@ -62,16 +62,16 @@ func Load() (*Config, error) {
 	defer configMu.Unlock()
 
 	// Defaults
-	viper.SetDefault("database.driver", "mongodb")
+	viper.SetDefault("database.driver", "sqlite")
 	viper.SetDefault("database.path", filepath.Join(os.Getenv("HOME"), ".local", "share", "vpsm", "vpsm.db"))
-	viper.SetDefault("database.uri", "mongodb://187.77.151.75:27017")
+	viper.SetDefault("database.uri", "mongodb://127.0.0.1:27017")
 	viper.SetDefault("database.name", "vpsm")
-	viper.SetDefault("api.enabled", false)
-	viper.SetDefault("api.host", "187.77.151.75")
+	viper.SetDefault("api.enabled", true)
+	viper.SetDefault("api.host", "127.0.0.1")
 	viper.SetDefault("api.port", 8080)
 	viper.SetDefault("api.mode", "local")
 	viper.SetDefault("api.token", "")
-	viper.SetDefault("api.global_url", "https://api.vpsm.dev")
+	viper.SetDefault("api.global_url", "http://127.0.0.1:8080")
 	viper.SetDefault("api.guard_password", "")
 	viper.SetDefault("ssh.timeout", 10*time.Second)
 	viper.SetDefault("logging.level", "info")
@@ -96,6 +96,17 @@ func Load() (*Config, error) {
 	// Parse to struct
 	if err := viper.Unmarshal(&CConfig); err != nil {
 		return nil, err
+	}
+
+	// Migrate legacy public IP defaults to local 127.0.0.1
+	if CConfig.API.Host == "187.77.151.75" {
+		CConfig.API.Host = "127.0.0.1"
+	}
+	if CConfig.API.GlobalURL == "http://187.77.151.75:8080" || CConfig.API.GlobalURL == "https://api.vpsm.dev" {
+		CConfig.API.GlobalURL = "http://127.0.0.1:8080"
+	}
+	if CConfig.Database.URI == "mongodb://187.77.151.75:27017" {
+		CConfig.Database.URI = "mongodb://127.0.0.1:27017"
 	}
 
 	// Expand home directory if sqlite path contains ~

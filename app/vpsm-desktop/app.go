@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/devlopersabbir/vpcm/internal/config"
+	"github.com/devlopersabbir/vpcm/internal/database"
 	"github.com/devlopersabbir/vpcm/internal/inventory"
 	"github.com/devlopersabbir/vpcm/internal/version"
 )
@@ -48,35 +49,64 @@ func (a *App) getAPIURL() string {
 	if err == nil && cfg.API.GlobalURL != "" {
 		return cfg.API.GlobalURL
 	}
-	return "http://187.77.151.75:8080"
+	return "http://127.0.0.1:8080"
 }
 
-// GetServers returns the list of all registered servers via REST API
+func (a *App) getLocalSQLiteServers() ([]inventory.ServerView, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, err
+	}
+	db, err := database.InitSQLite(cfg.Database.Path)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := inventory.NewSQLiteRepository(db)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return repo.ListServerViews(ctx)
+}
+
+// GetServers returns the list of all registered servers via REST API or local SQLite
 func (a *App) GetServers() ([]inventory.ServerView, error) {
+	cfg, _ := config.Load()
+	if cfg != nil && (cfg.API.Mode == "cloud" || cfg.Database.Driver == "mongodb") {
+		if cfg.API.GuardPassword == "" {
+			// Quietly return empty list when cloud password needs to be setup in Settings tab
+			return []inventory.ServerView{}, nil
+		}
+	}
+
 	url := fmt.Sprintf("%s/servers", a.getAPIURL())
-	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(a.ctx, 5*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		resp, err := httpClient.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				var list []inventory.ServerView
+				if err := json.NewDecoder(resp.Body).Decode(&list); err == nil {
+					return list, nil
+				}
+			}
+		}
 	}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API returned status: %d", resp.StatusCode)
+	// Fallback to local SQLite database if local driver mode or API server is offline
+	if cfg == nil || cfg.Database.Driver == "sqlite" {
+		localServers, err := a.getLocalSQLiteServers()
+		if err == nil {
+			return localServers, nil
+		}
 	}
 
-	var list []inventory.ServerView
-	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
-		return nil, err
-	}
-	return list, nil
+	return []inventory.ServerView{}, nil
 }
 
 // GetServer returns the detailed view of a single server via REST API

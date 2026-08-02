@@ -259,7 +259,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
 
       <CloudPasswordModal
         isOpen={isModalOpen}
-        targetURL={config.API?.GlobalURL || "http://187.77.151.75:8080"}
+        targetURL={config.API?.GlobalURL || "http://127.0.0.1:8080"}
         onClose={() => {
           setIsModalOpen(false);
           setPendingAction(null);

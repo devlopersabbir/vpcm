@@ -277,18 +277,23 @@ func (s *Server) handleVerifyCloudGuard(c *gin.Context) {
 		return
 	}
 
-	expectedPass := os.Getenv("CLOUD_GUARD_PASSWORD")
-	if expectedPass == "" {
-		cfg, err := config.Load()
-		if err == nil && cfg.API.GuardPassword != "" {
-			expectedPass = cfg.API.GuardPassword
-		}
+	cfg, _ := config.Load()
+	expectedPass := ""
+	if cfg != nil && cfg.API.GuardPassword != "" {
+		expectedPass = cfg.API.GuardPassword
+	} else {
+		expectedPass = os.Getenv("CLOUD_GUARD_PASSWORD")
 	}
 
+	// If no guard password is set yet, seed the password on first input
 	if expectedPass == "" {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"valid":   false,
-			"message": "Cloud guard password is not configured on server (CLOUD_GUARD_PASSWORD env var missing)",
+		if req.Password != "" && cfg != nil {
+			cfg.API.GuardPassword = req.Password
+			_ = config.Save(cfg)
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"valid":   true,
+			"message": "Cloud access authorized",
 		})
 		return
 	}

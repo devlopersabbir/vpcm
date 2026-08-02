@@ -368,6 +368,28 @@ if [[ "$ENABLE_WRAPPER" =~ ^[Yy]$ ]]; then
     else
         warn "Could not fetch shell_wrapper.sh content. Skipping wrapper config."
     fi
+# Auto-initialize default configuration (SQLite & API server enabled on 127.0.0.1)
+CONFIG_DIR="$HOME/.config/vpsm"
+CONFIG_FILE="$CONFIG_DIR/config.yaml"
+if [ ! -f "$CONFIG_FILE" ]; then
+    mkdir -p "$CONFIG_DIR"
+    cat <<EOF > "$CONFIG_FILE"
+database:
+  driver: sqlite
+  path: $HOME/.local/share/vpsm/vpsm.db
+api:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  mode: local
+  global_url: http://127.0.0.1:8080
+ssh:
+  timeout: 10s
+logging:
+  level: info
+  format: pretty
+EOF
+    success "Auto-initialized default configuration with SQLite & REST API enabled on 127.0.0.1"
 fi
 
 printf "\n%s%s✨ VPSM (vpsm/vpcm) has been successfully installed to %s!%s\n" "${GREEN}" "${BOLD}" "$INSTALL_DIR" "${NORMAL}"
