@@ -155,6 +155,52 @@ try {
         Write-Success "Added $InstallDir to User PATH environment variable."
     }
 
+    # Auto-initialize default configuration (SQLite & API server enabled on 127.0.0.1)
+    $ConfigDir = Join-Path $env:USERPROFILE ".config\vpsm"
+    $ConfigFile = Join-Path $ConfigDir "config.yaml"
+    if (-not (Test-Path $ConfigFile)) {
+        New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
+        $defaultConfig = @"
+database:
+  driver: sqlite
+  path: $env:USERPROFILE\.local\share\vpsm\vpsm.db
+api:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  mode: local
+  global_url: http://127.0.0.1:8080
+ssh:
+  timeout: 10s
+logging:
+  level: info
+  format: pretty
+"@
+        Set-Content -Path $ConfigFile -Value $defaultConfig
+        Write-Success "Auto-initialized default configuration with SQLite & REST API enabled on 127.0.0.1"
+    }
+
+    # Interactive prompt for starting REST API server daemon
+    $StartApi = $true
+    if (-not $NonInteractive -and -not $Yes -and [Environment]::UserInteractive) {
+        Write-Host "`nStep 2: Start REST API Server Daemon" -ForegroundColor White
+        $response = Read-Host "Do you want to start the REST API server daemon right now? [Y/n]"
+        if ($response -and $response.Trim().ToLower() -eq "n") {
+            $StartApi = $false
+        }
+    }
+
+    $apiBin = Join-Path $InstallDir "vpsm-api.exe"
+    if ($StartApi -and (Test-Path $apiBin)) {
+        Write-Info "Starting REST API server daemon in background..."
+        Stop-Process -Name "vpsm-api" -ErrorAction SilentlyContinue
+        Start-Process -FilePath $apiBin -WindowStyle Hidden
+        Write-Success "REST API server running at http://127.0.0.1:8080"
+    } else {
+        Write-Info "REST API server startup skipped."
+        Write-Host "You can start the REST API server anytime via CLI: 'vpsm api start' or 'vpcm api start' (or run 'vpsm-api.exe')`n" -ForegroundColor Cyan
+    }
+
     Write-Host "`n✨ VPSM (vpsm/vpcm) has been successfully installed to $InstallDir!" -ForegroundColor Green
     Write-Host "Run 'vpsm version' or 'vpcm version' in a new terminal window to verify your installation.`n" -ForegroundColor Cyan
 } finally {

@@ -51,6 +51,10 @@ install: build
 		printf "database:\n  driver: sqlite\n  path: $$HOME/.local/share/vpsm/vpsm.db\napi:\n  enabled: true\n  host: 127.0.0.1\n  port: 8080\n  mode: local\n  global_url: http://127.0.0.1:8080\nssh:\n  timeout: 10s\nlogging:\n  level: info\n  format: pretty\n" > "$$CONFIG_FILE"; \
 		echo "Auto-initialized default config in $$CONFIG_FILE"; \
 	fi
+	@echo "Starting REST API server daemon in background..."
+	@pkill -f "vpsm-api" 2>/dev/null || true
+	@nohup /usr/local/bin/vpsm-api > "$$HOME/.config/vpsm/vpsm-api.log" 2>&1 &
+	@echo "REST API server is running on http://127.0.0.1:8080 (logs at ~/.config/vpsm/vpsm-api.log)"
 	@echo "Installed vpsm, vpcm, vpsmd, and vpsm-api to /usr/local/bin"
 
 uninstall:

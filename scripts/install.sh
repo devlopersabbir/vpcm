@@ -392,5 +392,30 @@ EOF
     success "Auto-initialized default configuration with SQLite & REST API enabled on 127.0.0.1"
 fi
 
+START_API="y"
+if [ "$NON_INTERACTIVE" = "n" ] && [ -t 0 ]; then
+    printf "\n%sStep 2: Start REST API Server Daemon%s\n" "${WHITE}" "${NORMAL}"
+    printf "%sDo you want to start the REST API server daemon right now? [Y/n]: %s" "${CYAN}" "${NORMAL}"
+    read -r REPLY < /dev/tty || true
+    case "$REPLY" in
+        [nN][oO]|[nN])
+            START_API="n"
+            ;;
+        *)
+            START_API="y"
+            ;;
+    esac
+fi
+
+if [ "$START_API" = "y" ]; then
+    info "Starting REST API server daemon in background..."
+    pkill -f "vpsm-api" 2>/dev/null || true
+    nohup "$INSTALL_DIR/vpsm-api" > "$CONFIG_DIR/vpsm-api.log" 2>&1 &
+    success "REST API server running at http://127.0.0.1:8080 (logs at ~/.config/vpsm/vpsm-api.log)"
+else
+    info "REST API server startup skipped."
+    printf "You can start the REST API server anytime via CLI: %s'vpsm api start'%s or %s'vpcm api start'%s (or run %s'vpsm-api'%s)\n" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}"
+fi
+
 printf "\n%s%s✨ VPSM (vpsm/vpcm) has been successfully installed to %s!%s\n" "${GREEN}" "${BOLD}" "$INSTALL_DIR" "${NORMAL}"
 printf "Run %s'vpsm version'%s or %s'vpcm version'%s to verify your installation.\n\n" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}"

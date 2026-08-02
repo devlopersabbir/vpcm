@@ -36,10 +36,20 @@ func main() {
 	} else {
 		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
 		if err != nil {
-			log.Fatalf("failed to init MongoDB: %v", err)
+			log.Printf("[WARN] Failed to connect to MongoDB (%v). Falling back to local SQLite database...", err)
+			dbSqlite, errSqlite := database.InitSQLite(cfg.Database.Path)
+			if errSqlite != nil {
+				log.Fatalf("failed to init SQLite database fallback: %v", errSqlite)
+			}
+			invRepo, err = inventory.NewSQLiteRepository(dbSqlite)
+			if err != nil {
+				log.Fatalf("failed to init SQLite inventory repo: %v", err)
+			}
+			noteRepo = notes.NewSQLiteRepository(dbSqlite)
+		} else {
+			invRepo = inventory.NewMongoRepository(db)
+			noteRepo = notes.NewMongoRepository(db)
 		}
-		invRepo = inventory.NewMongoRepository(db)
-		noteRepo = notes.NewMongoRepository(db)
 	}
 
 	invSvc := inventory.NewService(invRepo)

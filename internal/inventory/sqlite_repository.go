@@ -120,6 +120,7 @@ func (r *sqliteServerRepository) migrate() error {
 		return err
 	}
 	_, _ = r.db.Exec("ALTER TABLE servers ADD COLUMN is_favorite INTEGER DEFAULT 0")
+	_, _ = r.db.Exec("ALTER TABLE servers ADD COLUMN tags TEXT")
 	return nil
 }
 
