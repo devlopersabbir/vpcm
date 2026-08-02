@@ -23,6 +23,5 @@ else
     codesign --force --deep --options runtime -s - "$APP_PATH"
 fi
 
-echo "[✓] Successfully signed '$APP_PATH'!"
-echo "[info] Verification output:"
-codesign --verify --verbose "$APP_PATH" || true
+echo "[info] Verification details:"
+codesign -dv --verbose=2 "$APP_PATH"

@@ -268,7 +268,7 @@ jobs:
           # on first launch. For notarization, add APPLE_* secrets and use
           # xcrun notarytool submit.
           codesign --deep --force --options runtime --sign - "$APP_PATH"
-          codesign --verify --verbose "$APP_PATH"
+          codesign -dv --verbose=2 "$APP_PATH"
           # Remove quarantine so the zip does not re-trigger Gatekeeper
           xattr -cr "$APP_PATH" || true
           echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
