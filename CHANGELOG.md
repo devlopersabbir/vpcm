@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.1.8] - 2026-08-02
+
+* Merge branch 'dev' (8f19878)
+* chore: bump version to v1.1.7 and add GuardPassword field to APIConfig model (c8a3bf4)
+* feat: automate REST API server initialization and add support for SQLite database fallback and server tagging (fd1f5d9)
+* feat: add database and API connection validation to settings with pre-save checks (a4349f0)
+* refactor: remove cloud password requirement and implement direct MongoDB support for server inventory (95a3b85)
+* feat: modularize desktop app operations and implement server-side authentication middleware (77b9890)
+* feat: migrate default configuration to local SQLite/localhost and implement local fallback for server fetching (b2629cb)
+
+
 ## [v1.1.7] - 2026-08-01
 
 * feat: introduce version tracking package with automated build-time injection (55cebcb)
