@@ -7,6 +7,7 @@ export namespace config {
 	    Mode: string;
 	    Token: string;
 	    GlobalURL: string;
+	    GuardPassword: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new APIConfig(source);
@@ -20,6 +21,7 @@ export namespace config {
 	        this.Mode = source["Mode"];
 	        this.Token = source["Token"];
 	        this.GlobalURL = source["GlobalURL"];
+	        this.GuardPassword = source["GuardPassword"];
 	    }
 	}
 	export class CollectorConfig {
