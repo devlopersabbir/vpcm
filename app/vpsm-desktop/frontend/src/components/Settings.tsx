@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
 import { Database, Terminal, Monitor } from "lucide-react";
-import CloudPasswordModal from "./CloudPasswordModal";
 
 interface SettingsProps {
   config: any;
@@ -9,15 +8,7 @@ interface SettingsProps {
 }
 
 export default function Settings({ config, setConfig, onSave }: SettingsProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-
   if (!config) return null;
-
-  const maskCloudHost = (val: string) => {
-    if (!val) return "";
-    return val.replace(/187\.77\.151\.75/g, "***.***.***.***");
-  };
 
   return (
     <div className="flex-1 p-8 overflow-y-auto w-full max-w-7xl mx-auto space-y-6">
@@ -27,8 +18,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           Database & Engine Settings
         </h1>
         <p className="text-slate-400 text-xs mt-1 font-medium">
-          Configure database storage drivers, central API endpoint URLs, and
-          collector thread workers.
+          Configure database storage drivers, custom database connection URIs, and central API server endpoints.
         </p>
       </div>
 
@@ -38,7 +28,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           <div className="pb-6 border-b border-slate-900">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center space-x-2 mb-4">
               <Database className="h-4 w-4 text-cyan-400" />
-              <span>Database Connection & Driver</span>
+              <span>Database Connection & Storage Driver</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -47,41 +37,31 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   Database Driver
                 </label>
                 <select
-                  value={config.Database.Driver}
+                  value={config.Database?.Driver || "sqlite"}
                   onChange={(e) => {
-                    const targetVal = e.target.value;
-                    if (targetVal === "mongodb") {
-                      setPendingAction(() => () => {
-                        const updated = { ...config };
-                        updated.Database.Driver = targetVal;
-                        setConfig(updated);
-                      });
-                      setIsModalOpen(true);
-                    } else {
-                      const updated = { ...config };
-                      updated.Database.Driver = targetVal;
-                      setConfig(updated);
-                    }
+                    const updated = { ...config };
+                    if (!updated.Database) updated.Database = {};
+                    updated.Database.Driver = e.target.value;
+                    setConfig(updated);
                   }}
                   className="w-full rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none glass-input font-medium"
                 >
                   <option value="sqlite">SQLite (Local File Storage)</option>
-                  <option value="mongodb">
-                    MongoDB (Cloud / Remote Server)
-                  </option>
+                  <option value="mongodb">MongoDB (Custom Database Connection URL)</option>
                 </select>
               </div>
 
-              {config.Database.Driver === "sqlite" ? (
+              {config.Database?.Driver === "sqlite" ? (
                 <div>
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">
-                    SQLite File Location
+                    SQLite Database File Path
                   </label>
                   <input
                     type="text"
-                    value={config.Database.Path}
+                    value={config.Database?.Path || ""}
                     onChange={(e) => {
                       const updated = { ...config };
+                      if (!updated.Database) updated.Database = {};
                       updated.Database.Path = e.target.value;
                       setConfig(updated);
                     }}
@@ -95,9 +75,10 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   </label>
                   <input
                     type="text"
-                    value={config.Database.Name}
+                    value={config.Database?.Name || "vpsm"}
                     onChange={(e) => {
                       const updated = { ...config };
+                      if (!updated.Database) updated.Database = {};
                       updated.Database.Name = e.target.value;
                       setConfig(updated);
                     }}
@@ -107,17 +88,18 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
               )}
             </div>
 
-            {config.Database.Driver === "mongodb" && (
+            {config.Database?.Driver === "mongodb" && (
               <div className="mt-4">
                 <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">
-                  MongoDB Connection URI
+                  MongoDB Connection URL / URI
                 </label>
                 <input
                   type="text"
-                  placeholder="mongodb://localhost:27017"
-                  value={maskCloudHost(config.Database.URI)}
+                  placeholder="mongodb://127.0.0.1:27017 or mongodb+srv://user:pass@cluster.mongodb.net"
+                  value={config.Database?.URI || ""}
                   onChange={(e) => {
                     const updated = { ...config };
+                    if (!updated.Database) updated.Database = {};
                     updated.Database.URI = e.target.value;
                     setConfig(updated);
                   }}
@@ -131,7 +113,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           <div>
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center space-x-2 mb-4">
               <Terminal className="h-4 w-4 text-cyan-400" />
-              <span>API Server & Collector Engine</span>
+              <span>API Server & Engine Endpoints</span>
             </h3>
 
             <div className="space-y-4">
@@ -140,49 +122,31 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                     Central API Server Endpoint URL
                   </label>
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = { ...config };
-                        updated.API.GlobalURL = "http://localhost:8080";
-                        setConfig(updated);
-                      }}
-                      className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-md transition-all"
-                    >
-                      Set Local Host
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPendingAction(() => () => {
-                          const updated = { ...config };
-                          updated.API.GlobalURL = "http://187.77.151.75:8080";
-                          setConfig(updated);
-                        });
-                        setIsModalOpen(true);
-                      }}
-                      className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 border border-indigo-800/40 px-2.5 py-0.5 rounded-md transition-all flex items-center space-x-1"
-                    >
-                      Set Cloud Default
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = { ...config };
+                      if (!updated.API) updated.API = {};
+                      updated.API.GlobalURL = "http://127.0.0.1:8080";
+                      setConfig(updated);
+                    }}
+                    className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-md transition-all"
+                  >
+                    Set Default Local Host
+                  </button>
                 </div>
                 <input
                   type="text"
-                  placeholder="http://localhost:8080"
-                  value={maskCloudHost(config.API?.GlobalURL || "")}
+                  placeholder="http://127.0.0.1:8080 or https://your-custom-api.com"
+                  value={config.API?.GlobalURL || ""}
                   onChange={(e) => {
                     const updated = { ...config };
+                    if (!updated.API) updated.API = {};
                     updated.API.GlobalURL = e.target.value;
                     setConfig(updated);
                   }}
                   className="w-full rounded-xl px-3.5 py-2 text-sm text-slate-200 font-mono focus:outline-none glass-input"
                 />
-                <p className="text-[11px] text-slate-500 mt-1 font-medium">
-                  Cloud host IPs in settings preview are masked
-                  (`187.***.***.75`) for security.
-                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,9 +156,10 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   </label>
                   <input
                     type="number"
-                    value={config.API.Port}
+                    value={config.API?.Port || 8080}
                     onChange={(e) => {
                       const updated = { ...config };
+                      if (!updated.API) updated.API = {};
                       updated.API.Port = Number(e.target.value);
                       setConfig(updated);
                     }}
@@ -207,9 +172,10 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
                   </label>
                   <input
                     type="number"
-                    value={config.Collector.Workers}
+                    value={config.Collector?.Workers || 5}
                     onChange={(e) => {
                       const updated = { ...config };
+                      if (!updated.Collector) updated.Collector = {};
                       updated.Collector.Workers = Number(e.target.value);
                       setConfig(updated);
                     }}
@@ -225,7 +191,7 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
               type="submit"
               className="px-6 py-2.5 bg-linear-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-cyan-950/30 transition-all duration-200 border border-cyan-500/20"
             >
-              Save Engine Configuration
+              Save Configuration
             </button>
           </div>
         </form>
@@ -256,22 +222,6 @@ export default function Settings({ config, setConfig, onSave }: SettingsProps) {
           Re-run Onboarding Wizard
         </button>
       </div>
-
-      <CloudPasswordModal
-        isOpen={isModalOpen}
-        targetURL={config.API?.GlobalURL || "http://127.0.0.1:8080"}
-        onClose={() => {
-          setIsModalOpen(false);
-          setPendingAction(null);
-        }}
-        onSuccess={() => {
-          setIsModalOpen(false);
-          if (pendingAction) {
-            pendingAction();
-            setPendingAction(null);
-          }
-        }}
-      />
     </div>
   );
 }

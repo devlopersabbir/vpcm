@@ -8,20 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/devlopersabbir/vpcm/internal/config"
 	"github.com/devlopersabbir/vpcm/internal/inventory"
 )
 
-// GetServers returns the list of all registered servers via REST API or local SQLite
+// GetServers returns the list of all registered servers via REST API or direct database connection
 func (a *App) GetServers() ([]inventory.ServerView, error) {
-	cfg, _ := config.Load()
-	if cfg != nil && (cfg.API.Mode == "cloud" || cfg.Database.Driver == "mongodb") {
-		if cfg.API.GuardPassword == "" {
-			// Quietly return empty list when cloud password needs to be setup in Settings tab
-			return []inventory.ServerView{}, nil
-		}
-	}
-
 	url := fmt.Sprintf("%s/servers", a.getAPIURL())
 	ctx, cancel := context.WithTimeout(a.ctx, 5*time.Second)
 	defer cancel()
@@ -41,12 +32,10 @@ func (a *App) GetServers() ([]inventory.ServerView, error) {
 		}
 	}
 
-	// Fallback to local SQLite database if local driver mode or API server is offline
-	if cfg == nil || cfg.Database.Driver == "sqlite" {
-		localServers, err := a.getLocalSQLiteServers()
-		if err == nil {
-			return localServers, nil
-		}
+	// Fallback to direct database query (SQLite or user's custom MongoDB Connection URI)
+	directServers, err := a.getDirectDBServers()
+	if err == nil {
+		return directServers, nil
 	}
 
 	return []inventory.ServerView{}, nil

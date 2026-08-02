@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -61,11 +62,25 @@ func (a *App) addAuthHeader(req *http.Request) {
 	}
 }
 
-func (a *App) getLocalSQLiteServers() ([]inventory.ServerView, error) {
+func (a *App) getDirectDBServers() ([]inventory.ServerView, error) {
 	cfg, err := config.Load()
-	if err != nil {
-		return nil, err
+	if err != nil || cfg == nil {
+		return nil, fmt.Errorf("config load error")
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if cfg.Database.Driver == "mongodb" && cfg.Database.URI != "" {
+		db, err := database.InitMongo(cfg.Database.URI, cfg.Database.Name)
+		if err != nil {
+			return nil, err
+		}
+		repo := inventory.NewMongoRepository(db)
+		return repo.ListServerViews(ctx)
+	}
+
+	// Default SQLite local file storage
 	db, err := database.InitSQLite(cfg.Database.Path)
 	if err != nil {
 		return nil, err
@@ -74,7 +89,5 @@ func (a *App) getLocalSQLiteServers() ([]inventory.ServerView, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	return repo.ListServerViews(ctx)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -44,12 +43,9 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		expectedPass := cfg.API.GuardPassword
 		expectedToken := cfg.API.Token
-		envPass := os.Getenv("CLOUD_GUARD_PASSWORD")
-
-		// If no password/token is set yet on server, allow access (unseeded initial mode)
-		if expectedPass == "" && expectedToken == "" && envPass == "" {
+		// If no token is configured on server, allow direct access
+		if expectedToken == "" {
 			c.Next()
 			return
 		}
@@ -68,15 +64,13 @@ func AuthMiddleware() gin.HandlerFunc {
 			token = c.Query("token")
 		}
 
-		if (expectedPass != "" && token == expectedPass) ||
-			(expectedToken != "" && token == expectedToken) ||
-			(envPass != "" && token == envPass) {
+		if token == expectedToken {
 			c.Next()
 			return
 		}
 
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Unauthorized: Cloud guard authentication required. Verify access via /verify-cloud-access first.",
+			"error": "Unauthorized: API token authentication required.",
 		})
 		c.Abort()
 	}
