@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=VPSM Desktop
+GenericName=VPS Manager & Remote Terminal Panel
+Comment=Manage remote Linux VPS & dedicated servers via SSH
+Exec=vpsm-desktop %U
+Icon=vpsm-desktop
+Terminal=false
+Categories=Network;System;Utility;GTK;
+MimeType=x-scheme-handler/vpsm;
+Keywords=vps;ssh;terminal;server;inventory;vpcm;
+StartupWMClass=vpsm-desktop

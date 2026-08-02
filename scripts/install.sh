@@ -417,5 +417,26 @@ else
     printf "You can start the REST API server anytime via CLI: %s'vpsm api start'%s or %s'vpcm api start'%s (or run %s'vpsm-api'%s)\n" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}"
 fi
 
+# Configure Linux/Ubuntu desktop application launcher
+if [ "$OS" = "linux" ]; then
+    DESKTOP_DIR="$HOME/.local/share/applications"
+    mkdir -p "$DESKTOP_DIR"
+    cat <<EOF > "$DESKTOP_DIR/vpsm-desktop.desktop"
+[Desktop Entry]
+Type=Application
+Name=VPSM Desktop
+GenericName=VPS Manager & Remote Terminal Panel
+Comment=Manage remote Linux VPS & dedicated servers via SSH
+Exec=$INSTALL_DIR/vpsm-desktop %U
+Icon=vpsm-desktop
+Terminal=false
+Categories=Network;System;Utility;GTK;
+MimeType=x-scheme-handler/vpsm;
+Keywords=vps;ssh;terminal;server;inventory;vpcm;
+StartupWMClass=vpsm-desktop
+EOF
+    success "Configured Linux desktop launcher entry in ~/.local/share/applications/vpsm-desktop.desktop"
+fi
+
 printf "\n%s%s✨ VPSM (vpsm/vpcm) has been successfully installed to %s!%s\n" "${GREEN}" "${BOLD}" "$INSTALL_DIR" "${NORMAL}"
 printf "Run %s'vpsm version'%s or %s'vpcm version'%s to verify your installation.\n\n" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}"

@@ -13,8 +13,9 @@
   "info": {
     "companyName": "devlopersabbir",
     "productName": "VPSM Desktop",
-    "productVersion": "1.1.2",
-    "copyright": "Copyright © 2024 devlopersabbir",
-    "comments": "VPS Manager — manage your servers from anywhere"
+    "productVersion": "1.1.7",
+    "copyright": "Copyright © 2026 devlopersabbir",
+    "comments": "VPS Manager — Remote Server Inventory & SSH Terminal Panel",
+    "bundleIdentifier": "com.devlopersabbir.vpsm-desktop"
   }
 }
