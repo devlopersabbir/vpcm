@@ -1,8 +1,13 @@
 # Changelog
 
+## [v1.1.14] - 2026-08-02
+
+* update (52a1174)
+* chore: remove inadvertent .DS_Store system files from repository (45c2207)
+
+
 ## [v1.1.13] - 2026-08-02
 
-* Delete .DS_Store (7bf6828)
 * refactor: move vpsm-desktop cask definition to Casks directory and update README installation instructions (54bdfb5)
 
 
