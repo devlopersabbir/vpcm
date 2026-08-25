@@ -7,6 +7,7 @@ import (
 
 	"github.com/devlopersabbir/vpcm/internal/events"
 	"github.com/devlopersabbir/vpcm/internal/ssh"
+	"github.com/google/uuid"
 )
 
 type serverService struct {
@@ -21,7 +22,7 @@ func NewService(repo ServerRepository) ServerService {
 
 func (s *serverService) AddServer(ctx context.Context, server *Server) error {
 	if server.UUID == "" {
-		server.UUID = "uuid-" + server.Host
+		server.UUID = uuid.NewString()
 	}
 	return s.repo.Create(ctx, server)
 }

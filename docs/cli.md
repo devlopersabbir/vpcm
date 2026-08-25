@@ -61,6 +61,36 @@ Lists all servers registered in the local inventory.
 vpsm server list
 ```
 
+### `vpsm server export`
+
+Writes the whole inventory to stdout, or to a file with `--out` / `-o`.
+
+```bash
+vpsm server export --format <ssh|json|csv|yaml> [--out <file>]
+```
+
+_Example:_
+
+```bash
+vpsm server export -f json -o ~/backups/servers.json
+```
+
+### `vpsm server import`
+
+Reads servers back in from a file produced by `vpsm server export`, or from an SSH config. The input path is taken from the argument or `--in` / `-i`, and defaults to stdin.
+
+```bash
+vpsm server import [file] [--format <ssh|json|csv|yaml|auto>] [--in <file>] [--on-conflict <skip|overwrite|rename|fail>] [--dry-run]
+```
+
+The format is detected from the file extension and contents unless `--format` says otherwise. Existing servers are matched by UUID and then by name, and `--on-conflict` decides whether those matches are skipped (default), updated, imported under a suffixed name, or treated as a fatal error.
+
+_Example:_
+
+```bash
+vpsm server import ~/backups/servers.json --on-conflict overwrite
+```
+
 ---
 
 ## Configuration Reference (`~/.config/vpsm/config.yaml`)

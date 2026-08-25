@@ -211,9 +211,9 @@ func (r *sqliteServerRepository) Update(ctx context.Context, s *Server) error {
 	}
 
 	_, err := r.db.ExecContext(ctx, `
-	UPDATE servers SET name = ?, auth_type = ?, auth_secret = ?, provider = ?, updated_at = ?, last_seen = ?, is_favorite = ?, tags = ?
+	UPDATE servers SET name = ?, host = ?, port = ?, username = ?, auth_type = ?, auth_secret = ?, provider = ?, updated_at = ?, last_seen = ?, is_favorite = ?, tags = ?
 	WHERE id = ?`,
-		s.Name, s.AuthType, s.AuthSecret, s.Provider, s.UpdatedAt, lastSeen, isFavorite, string(tagsJSON), s.ID)
+		s.Name, s.Host, s.Port, s.Username, s.AuthType, s.AuthSecret, s.Provider, s.UpdatedAt, lastSeen, isFavorite, string(tagsJSON), s.ID)
 	return err
 }
 

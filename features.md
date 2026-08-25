@@ -4,6 +4,11 @@ This file documents all currently implemented features and future plans for the 
 
 ## Features & Plan
 
+### 2026-08-25
+
+- [x] **Server Inventory Import**: Add `vpsm server import` as the counterpart to `vpsm server export`, reading JSON, YAML, CSV and SSH config input from a file or stdin with format auto-detection.
+- [x] **Import Conflict Strategies**: Match incoming servers against the inventory by UUID then name, and resolve collisions via `--on-conflict skip|overwrite|rename|fail` with a `--dry-run` preview.
+
 ### 2026-07-18
 
 - [x] **Dynamic Terminal Resizing**: Support interactive shell window resizing via SIGWINCH (unix platforms) and update SSH sessions dynamically via `WindowChange`.

@@ -20,6 +20,7 @@ var knownCommands = []string{
 	"server favorite",
 	"server flush",
 	"server export",
+	"server import",
 	"ssh",
 	"audit --name",
 	"audit --host",

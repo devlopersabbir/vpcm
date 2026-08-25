@@ -42,6 +42,17 @@ func init() {
 	serverExportCmd.Flags().StringVarP(&exportFormat, "format", "f", "json", "Output format (ssh, json, csv, yaml)")
 	serverExportCmd.Flags().StringVarP(&exportOutputFile, "out", "o", "", "Output file path (default: stdout)")
 
+	serverImportCmd.Flags().StringVarP(&importFormat, "format", "f", "auto", "Input format (ssh, json, csv, yaml, auto)")
+	serverImportCmd.Flags().StringVarP(&importInputFile, "in", "i", "", "Input file path (default: stdin)")
+	serverImportCmd.Flags().StringVar(&importOnConflict, "on-conflict", "skip", "Action for servers that already exist (skip, overwrite, rename, fail)")
+	serverImportCmd.Flags().BoolVar(&importDryRun, "dry-run", false, "Preview the import without writing to the database")
+	_ = serverImportCmd.RegisterFlagCompletionFunc("format", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return []string{"auto", "json", "yaml", "csv", "ssh"}, cobra.ShellCompDirectiveNoFileComp
+	})
+	_ = serverImportCmd.RegisterFlagCompletionFunc("on-conflict", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return []string{"skip", "overwrite", "rename", "fail"}, cobra.ShellCompDirectiveNoFileComp
+	})
+
 	serverListCmd.Flags().BoolVarP(&interactiveList, "interactive", "i", false, "Open interactive TUI server explorer")
 	serverListCmd.Flags().BoolVarP(&listFavorites, "favorites", "f", false, "Filter to only show favorite servers")
 	serverListCmd.Flags().BoolVarP(&listRecents, "recents", "r", false, "List recently connected servers first")
@@ -58,7 +69,7 @@ func init() {
 	_ = auditCmd.RegisterFlagCompletionFunc("host", serverHostCompletions)
 	_ = auditCmd.RegisterFlagCompletionFunc("id", serverIDCompletions)
 
-	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverFavoriteCmd)
+	serverCmd.AddCommand(serverListCmd, serverAddCmd, serverRemoveCmd, serverFlushCmd, serverRenameCmd, serverExportCmd, serverImportCmd, serverFavoriteCmd)
 	sshCmd.Flags().StringVarP(&identityFile, "identity", "i", "", "identity file (private key)")
 	rootCmd.SilenceUsage = true
 	rootCmd.SilenceErrors = true

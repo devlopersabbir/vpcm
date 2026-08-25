@@ -159,7 +159,40 @@ vpsm server export -f csv -o ~/backups/servers.csv
 
 ---
 
-## 🔌 6. Connecting via SSH
+## 📥 6. Importing Server Data
+
+Restore an inventory from any file `vpsm server export` produced, or adopt hosts from an existing SSH config:
+
+```bash
+# Import from a JSON backup (format detected from the extension)
+vpsm server import ~/backups/servers.json
+
+# The same thing with explicit flags
+vpsm server import -f json -i ~/backups/servers.json
+
+# Adopt every host already defined in your SSH config
+vpsm server import ~/.ssh/config
+
+# Pipe an export straight from another machine
+ssh admin@backup-box 'vpsm server export -f json' | vpsm server import -f json
+```
+
+- **Format Detection:** JSON, YAML, CSV and SSH config inputs are recognized from the file extension and contents, so `--format` / `-f` is only needed for stdin or a misleading extension.
+- **Dry Runs:** Add `--dry-run` to see exactly what would be created, updated or skipped without touching the database.
+- **Conflict Handling:** Servers already in the inventory are matched by UUID first and then by name. Use `--on-conflict` to choose what happens to those matches:
+
+| Strategy    | Behaviour                                                               |
+| ----------- | ----------------------------------------------------------------------- |
+| `skip`      | Leave the stored server untouched (default)                             |
+| `overwrite` | Update the stored server with the imported values                       |
+| `rename`    | Import the incoming server under a suffixed name, keeping both copies    |
+| `fail`      | Abort the whole import on the first conflict                            |
+
+Credentials are never cleared by an import: formats that carry no secret (such as CSV) leave the stored password or key in place.
+
+---
+
+## 🔌 7. Connecting via SSH
 
 Establish interactive PTY terminal connections:
 
@@ -173,6 +206,6 @@ vpcm ssh root@10.0.0.5
 
 ---
 
-## 🖥️ 7. Desktop Application Dashboard
+## 🖥️ 8. Desktop Application Dashboard
 
 In addition to the CLI, VPSM includes a beautiful, cross-platform Wails desktop application. Refer to the [Desktop Application Documentation](file:///Users/sabbir/own/vpcm/wiki/Desktop-App.md) for full setup guides, system stat panels, and details.

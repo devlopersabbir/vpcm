@@ -204,7 +204,6 @@ var serverAddCmd = &cobra.Command{
 		}
 
 		server := &inventory.Server{
-			UUID:     "dummy-uuid-for-v0.0.1",
 			Name:     name,
 			Host:     host,
 			Port:     22,
