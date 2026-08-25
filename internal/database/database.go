@@ -49,7 +49,12 @@ func InitSQLite(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	db, err := sql.Open("sqlite", path)
+	// Without a busy timeout, a write that races another process (the background
+	// API server, the desktop app) fails immediately with "database is locked"
+	// instead of waiting for the other writer to finish.
+	dsn := "file:" + path + "?_pragma=busy_timeout(5000)"
+
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}

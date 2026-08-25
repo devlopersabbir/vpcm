@@ -120,6 +120,11 @@ the outcome without writing anything.`,
 		var results []importResult
 		var created, updated, skipped, invalid int
 
+		// A write failure part-way through leaves earlier records applied, so the
+		// summary is always printed before the error is surfaced.
+		var importErr error
+
+	records:
 		for _, candidate := range incoming {
 			server, err := normalizeImportedServer(candidate)
 			if err != nil {
@@ -136,7 +141,8 @@ the outcome without writing anything.`,
 				}
 				if !importDryRun {
 					if err := repo.Create(cmd.Context(), &server); err != nil {
-						return fmt.Errorf("failed to import server '%s': %w", server.Name, err)
+						importErr = fmt.Errorf("failed to import server '%s': %w", server.Name, err)
+						break records
 					}
 				}
 				takenNames[strings.ToLower(server.Name)] = true
@@ -150,7 +156,8 @@ the outcome without writing anything.`,
 
 			switch conflictMode {
 			case "fail":
-				return fmt.Errorf("server '%s' already exists (matched by %s); rerun with --on-conflict skip, overwrite or rename", server.Name, matchedOn)
+				importErr = fmt.Errorf("server '%s' already exists (matched by %s); rerun with --on-conflict skip, overwrite or rename", server.Name, matchedOn)
+				break records
 
 			case "skip":
 				results = append(results, importResult{Name: server.Name, Host: server.Host, Action: "skipped", Detail: "already exists, matched by " + matchedOn})
@@ -160,7 +167,8 @@ the outcome without writing anything.`,
 				merged := mergeImportedServer(*match, server)
 				if !importDryRun {
 					if err := repo.Update(cmd.Context(), &merged); err != nil {
-						return fmt.Errorf("failed to update server '%s': %w", merged.Name, err)
+						importErr = fmt.Errorf("failed to update server '%s': %w", merged.Name, err)
+						break records
 					}
 				}
 				// A rename frees the old key, which must not keep matching later records.
@@ -178,7 +186,8 @@ the outcome without writing anything.`,
 				server.UUID = uuid.NewString()
 				if !importDryRun {
 					if err := repo.Create(cmd.Context(), &server); err != nil {
-						return fmt.Errorf("failed to import server '%s': %w", server.Name, err)
+						importErr = fmt.Errorf("failed to import server '%s': %w", server.Name, err)
+						break records
 					}
 				}
 				takenNames[strings.ToLower(server.Name)] = true
@@ -191,13 +200,15 @@ the outcome without writing anything.`,
 		}
 
 		printImportResults(results, format, path, importSummary{
-			Created: created,
-			Updated: updated,
-			Skipped: skipped,
-			Invalid: invalid,
-			DryRun:  importDryRun,
+			Created:   created,
+			Updated:   updated,
+			Skipped:   skipped,
+			Invalid:   invalid,
+			DryRun:    importDryRun,
+			Aborted:   importErr != nil,
+			Remaining: len(incoming) - (created + updated + skipped + invalid),
 		})
-		return nil
+		return importErr
 	},
 }
 
@@ -602,11 +613,13 @@ type importResult struct {
 }
 
 type importSummary struct {
-	Created int
-	Updated int
-	Skipped int
-	Invalid int
-	DryRun  bool
+	Created   int
+	Updated   int
+	Skipped   int
+	Invalid   int
+	DryRun    bool
+	Aborted   bool
+	Remaining int
 }
 
 func printImportResults(results []importResult, format, path string, summary importSummary) {
@@ -652,8 +665,11 @@ func printImportResults(results []importResult, format, path string, summary imp
 	fmt.Println(tbl)
 
 	verb := "Imported"
-	if summary.DryRun {
+	switch {
+	case summary.DryRun:
 		verb = "Would import"
+	case summary.Aborted:
+		verb = "Applied before stopping"
 	}
 	line := fmt.Sprintf("%s from %s (%s format): %d created, %d updated, %d skipped",
 		verb, describeImportSource(path), format, summary.Created, summary.Updated, summary.Skipped)
@@ -661,4 +677,9 @@ func printImportResults(results []importResult, format, path string, summary imp
 		line += fmt.Sprintf(", %s", re.NewStyle().Foreground(red).Render(fmt.Sprintf("%d invalid", summary.Invalid)))
 	}
 	fmt.Println(line + ".")
+
+	if summary.Aborted && summary.Remaining > 0 {
+		fmt.Println(re.NewStyle().Foreground(amber).Render(fmt.Sprintf(
+			"%d record(s) were not processed. Re-running the import will pick up where it stopped.", summary.Remaining)))
+	}
 }

@@ -190,6 +190,12 @@ ssh admin@backup-box 'vpsm server export -f json' | vpsm server import -f json
 
 Credentials are never cleared by an import: formats that carry no secret (such as CSV) leave the stored password or key in place.
 
+A few details worth knowing:
+
+- **Re-importing is safe.** JSON, YAML and CSV exports carry the server UUID, so restoring the same backup twice changes nothing even if you renamed servers in between.
+- **UUID-less input matches on name only.** SSH configs and hand-written files have no UUID, so if you rename a server and then re-import such a file, the original entry is created again under its old name. Use `--dry-run` first if you are unsure.
+- **An interrupted import is resumable.** If a record fails to write, the summary still reports everything that was applied and how many records went unprocessed. Because `skip` is the default, simply running the same import again finishes the job.
+
 ---
 
 ## 🔌 7. Connecting via SSH
