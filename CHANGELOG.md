@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.1.15] - 2026-08-25
+
+* fix: close unterminated shell wrapper conditional in install.sh (0151435)
+* chore: bump version to v1.1.14 [skip ci] (f5d6676)
+* chore: bump version to v1.1.13 [skip ci] (78ebabf)
+* update (52a1174)
+* chore: remove inadvertent .DS_Store system files from repository (45c2207)
+
+
 ## [v1.1.14] - 2026-08-02
 
 * update (52a1174)
