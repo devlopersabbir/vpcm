@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.1.16] - 2026-08-25
+
+* Merge branch 'main' of github.com:devlopersabbir/vpcm (c82a30f)
+* added new feature for import json (c4a422e)
+
+
 ## [v1.1.15] - 2026-08-25
 
 * fix: close unterminated shell wrapper conditional in install.sh (0151435)

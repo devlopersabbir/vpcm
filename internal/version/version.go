@@ -10,4 +10,4 @@ package version
 // Only the patch number increments per release (e.g. v1.1.2 → v1.1.3).
 // Do NOT edit manually — CI reads this value, increments the patch, and
 // commits the updated file back to main after every release.
-var Version = "v1.1.15"
+var Version = "v1.1.16"
