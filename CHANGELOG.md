@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.1.17] - 2026-08-25
+
+* fix: report partial import progress and prevent SQLite lock failures (07afe12)
+
+
 ## [v1.1.16] - 2026-08-25
 
 * Merge branch 'main' of github.com:devlopersabbir/vpcm (c82a30f)
