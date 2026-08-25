@@ -368,6 +368,8 @@ if [[ "$ENABLE_WRAPPER" =~ ^[Yy]$ ]]; then
     else
         warn "Could not fetch shell_wrapper.sh content. Skipping wrapper config."
     fi
+fi
+
 # Auto-initialize default configuration (SQLite & API server enabled on 127.0.0.1)
 CONFIG_DIR="$HOME/.config/vpsm"
 CONFIG_FILE="$CONFIG_DIR/config.yaml"
