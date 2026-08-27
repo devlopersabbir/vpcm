@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.1.18] - 2026-08-27
+
+* refactor: remove unused Font Awesome assets and clean up scripts (d5149fd)
+
+
 ## [v1.1.17] - 2026-08-25
 
 * fix: report partial import progress and prevent SQLite lock failures (07afe12)
