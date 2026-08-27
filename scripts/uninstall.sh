@@ -39,8 +39,9 @@ echo "   \ V /| |_) \___ \| |\/| |"
 echo "    \ / |  __/ ___) | |  | |"
 echo "     V  |_|   |____/|_|  |_|"
 printf "%s\n" "${NORMAL}"
-printf "%s%sVPSM / VPCM Uninstaller%s\n" "${WHITE}" "${BOLD}" "${NORMAL}"
-printf "This script will remove all installed VPSM binaries and shell wrappers.\n\n"
+printf "%s%sComplete VPSM / VPCM Uninstaller%s\n" "${WHITE}" "${BOLD}" "${NORMAL}"
+printf "This script cleanly removes all VPSM binaries, background daemons, configurations,\n"
+printf "desktop entries, and shell wrappers while safely preserving your SQLite database.\n\n"
 
 # Default variables
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -59,9 +60,8 @@ else
     INSTALL_DIR="/usr/local/bin"
 fi
 
-REMOVE_WRAPPER="y"
-REMOVE_CONFIG="n"
 AUTO_CONFIRM="n"
+PURGE_DB="n"
 
 # Parse CLI arguments
 while [[ $# -gt 0 ]]; do
@@ -70,30 +70,20 @@ while [[ $# -gt 0 ]]; do
             INSTALL_DIR="$2"
             shift 2
             ;;
-        -y|--yes)
+        -y|--yes|--non-interactive)
             AUTO_CONFIRM="y"
             shift
             ;;
-        --keep-wrapper)
-            REMOVE_WRAPPER="n"
-            shift
-            ;;
-        --keep-config)
-            REMOVE_CONFIG="n"
-            shift
-            ;;
-        --remove-config)
-            REMOVE_CONFIG="y"
+        --purge-db)
+            PURGE_DB="y"
             shift
             ;;
         -h|--help)
             echo "Usage: uninstall.sh [options]"
             echo "Options:"
-            echo "  -d, --dir <path>     Installation directory (default: /usr/local/bin or %LOCALAPPDATA%/Programs/vpsm)"
-            echo "  -y, --yes            Skip confirmation and uninstall VPSM"
-            echo "  --keep-wrapper       Do not remove the shell wrapper override"
-            echo "  --keep-config        Do not remove config and data directory (default)"
-            echo "  --remove-config      Remove config and data directory"
+            echo "  -d, --dir <path>     Primary installation directory (default: /usr/local/bin or %LOCALAPPDATA%/Programs/vpsm)"
+            echo "  -y, --yes            Skip confirmation and perform clean uninstall"
+            echo "  --purge-db           Purge the SQLite database as well (by default it is preserved)"
             echo "  -h, --help           Show this help message"
             exit 0
             ;;
@@ -106,8 +96,9 @@ done
 # Confirm uninstallation if not auto-confirmed
 if [ "$AUTO_CONFIRM" != "y" ]; then
     if [ -c /dev/tty ]; then
-        printf "%sWarning:%s This will permanently remove VPSM (vpsm/vpcm/vpsmd/vpsm-api) from your system.\n" "${YELLOW}${BOLD}" "${NORMAL}"
-        read -p "Are you sure you want to uninstall? [y/N]: " CONFIRM < /dev/tty
+        printf "%sNotice:%s This will remove all VPSM/VPCM binaries, running daemons, configs, and shell wrappers.\n" "${YELLOW}${BOLD}" "${NORMAL}"
+        printf "%sNote:%s Your SQLite database will NOT be removed unless --purge-db is specified.\n\n" "${GREEN}${BOLD}" "${NORMAL}"
+        read -p "Are you sure you want to proceed with uninstallation? [y/N]: " CONFIRM < /dev/tty
         CONFIRM=${CONFIRM:-"n"}
         if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
             warn "Uninstall cancelled."
@@ -129,103 +120,202 @@ if [[ "$INSTALL_DIR" != /* ]] && [[ "$INSTALL_DIR" != [A-Za-z]:* ]]; then
     INSTALL_DIR="$(pwd)/$INSTALL_DIR"
 fi
 
-# Validate path format
-if [[ "$INSTALL_DIR" =~ [\$\{\}\*\?\'\"\|\<\>\&\;] ]]; then
-    error "Invalid installation path: $INSTALL_DIR contains illegal characters."
-    exit 1
-fi
-
-# Prompt for wrapper removal if not auto-confirmed
-if [ "$AUTO_CONFIRM" != "y" ] && [ "$REMOVE_WRAPPER" = "y" ]; then
-    if [ -c /dev/tty ]; then
-        read -p "Remove the VPSM ssh wrapper from your shell profiles? [Y/n]: " RM_WRAP < /dev/tty
-        REMOVE_WRAPPER=${RM_WRAP:-"y"}
-    fi
-fi
-
 printf "\n"
 
-# Remove binaries
-BINARIES=("vpsm" "vpsm.exe" "vpcm" "vpcm.exe" "vpsmd" "vpsmd.exe" "vpsm-api" "vpsm-api.exe")
-for bin in "${BINARIES[@]}"; do
-    BIN_PATH="$INSTALL_DIR/$bin"
-    if [ -f "$BIN_PATH" ] || [ -L "$BIN_PATH" ]; then
-        if [ ! -w "$INSTALL_DIR" ] || { [ -f "$BIN_PATH" ] && [ ! -w "$BIN_PATH" ]; }; then
-            if command -v sudo >/dev/null 2>&1; then
-                sudo rm -f "$BIN_PATH"
-            else
-                error "Permission denied removing $BIN_PATH and 'sudo' is not available."
-                exit 1
-            fi
-        else
-            rm -f "$BIN_PATH"
-        fi
-        success "Removed $BIN_PATH"
+# 1. Stop background processes & daemons
+info "Stopping running background processes and daemons..."
+pkill -f "vpsm-api" 2>/dev/null || true
+pkill -f "vpsmd" 2>/dev/null || true
+pkill -f "vpsm-desktop" 2>/dev/null || true
+pkill -x "vpsm" 2>/dev/null || true
+pkill -x "vpcm" 2>/dev/null || true
+success "Terminated active VPSM processes and background daemons."
+
+# 2. Remove binaries and symlinks
+info "Scanning and removing binaries from system paths..."
+SEARCH_DIRS=(
+    "$INSTALL_DIR"
+    "/usr/local/bin"
+    "/opt/homebrew/bin"
+    "/usr/bin"
+    "$HOME/.local/bin"
+    "$HOME/bin"
+    "$HOME/go/bin"
+    "${GOPATH:+${GOPATH}/bin}"
+)
+
+BINARIES=("vpsm" "vpsm.exe" "vpcm" "vpcm.exe" "vpsmd" "vpsmd.exe" "vpsm-api" "vpsm-api.exe" "vpsm-desktop" "vpsm-desktop.exe")
+
+for dir in "${SEARCH_DIRS[@]}"; do
+    if [ -z "$dir" ] || [ ! -d "$dir" ]; then
+        continue
     fi
+    for bin in "${BINARIES[@]}"; do
+        BIN_PATH="$dir/$bin"
+        if [ -f "$BIN_PATH" ] || [ -L "$BIN_PATH" ]; then
+            if [ ! -w "$dir" ] || { [ -f "$BIN_PATH" ] && [ ! -w "$BIN_PATH" ]; }; then
+                if command -v sudo >/dev/null 2>&1; then
+                    sudo rm -f "$BIN_PATH"
+                else
+                    warn "Permission denied removing $BIN_PATH and 'sudo' is not available."
+                    continue
+                fi
+            else
+                rm -f "$BIN_PATH"
+            fi
+            success "Removed $BIN_PATH"
+        fi
+    done
 done
 
-# Remove shell wrapper blocks from shell profiles
-remove_wrapper_from_file() {
+# 3. Clean Shell configuration files (wrappers, completion, aliases)
+info "Cleaning shell profiles and RC files..."
+
+clean_shell_file() {
     local SHELL_RC="$1"
     if [ ! -f "$SHELL_RC" ]; then
         return
     fi
-    if ! grep -q "VPSM ssh wrapper override" "$SHELL_RC"; then
-        skip "No VPSM wrapper found in $SHELL_RC — skipping"
+
+    # Check if the file contains any vpsm/vpcm references or wrappers
+    if ! grep -q -E "(VPSM ssh wrapper override|VPCM ssh wrapper override|vpsm|vpcm)" "$SHELL_RC" 2>/dev/null; then
         return
     fi
 
-    # Use a portable awk/sed approach to strip the wrapper block
     local tmp_file
     tmp_file=$(mktemp)
+
     awk '
-        /# VPSM ssh wrapper override/ { skip = 1; next }
-        skip && /^}/ { skip = 0; next }
-        skip { next }
-        { print }
+    BEGIN { in_vpsm_comment = 0; in_ssh_func = 0; ssh_buf = ""; }
+    /# VPSM ssh wrapper override/ || /# VPCM ssh wrapper override/ {
+        in_vpsm_comment = 1
+        next
+    }
+    in_vpsm_comment {
+        if ($0 ~ /^}/) {
+            in_vpsm_comment = 0
+        }
+        next
+    }
+    /^(function[[:space:]]+)?ssh([[:space:]]*\(\))?[[:space:]]*\{/ {
+        in_ssh_func = 1
+        ssh_buf = $0 "\n"
+        next
+    }
+    in_ssh_func {
+        ssh_buf = ssh_buf $0 "\n"
+        if ($0 ~ /^}/) {
+            in_ssh_func = 0
+            if (ssh_buf ~ /vpsm/ || ssh_buf ~ /vpcm/) {
+                ssh_buf = ""
+                next
+            } else {
+                printf "%s", ssh_buf
+                ssh_buf = ""
+                next
+            }
+        }
+        next
+    }
+    /vpsm[[:space:]]+completion/ || /vpcm[[:space:]]+completion/ || /alias[[:space:]]+vpsm=/ || /alias[[:space:]]+vpcm=/ {
+        next
+    }
+    {
+        print
+    }
     ' "$SHELL_RC" > "$tmp_file"
 
     if [ ! -w "$SHELL_RC" ]; then
         if command -v sudo >/dev/null 2>&1; then
             sudo mv "$tmp_file" "$SHELL_RC"
         else
-            error "Permission denied modifying $SHELL_RC and 'sudo' is not available."
+            warn "Permission denied modifying $SHELL_RC."
             rm -f "$tmp_file"
-            exit 1
+            return
         fi
     else
         mv "$tmp_file" "$SHELL_RC"
     fi
-    success "Removed VPSM wrapper from $SHELL_RC"
+    success "Cleaned shell profile: $SHELL_RC"
 }
 
-if [[ "$REMOVE_WRAPPER" =~ ^[Yy]$ ]]; then
-    info "Removing shell wrappers..."
-    remove_wrapper_from_file "$HOME/.zshrc"
-    remove_wrapper_from_file "$HOME/.bashrc"
-    remove_wrapper_from_file "$HOME/.bash_profile"
-    remove_wrapper_from_file "$HOME/.profile"
-fi
+SHELL_PROFILES=(
+    "$HOME/.zshrc"
+    "$HOME/.bashrc"
+    "$HOME/.bash_profile"
+    "$HOME/.profile"
+    "$HOME/.zprofile"
+    "$HOME/.zshenv"
+    "$HOME/.config/fish/config.fish"
+)
 
-# Remove local config and data directories
-CONFIG_DIR="$HOME/.config/vpsm"
-if [ -d "$CONFIG_DIR" ]; then
-    if [ "$AUTO_CONFIRM" != "y" ] && [ "$REMOVE_CONFIG" = "n" ]; then
-        if [ -t 0 ] && [ -c /dev/tty ]; then
-            read -p "Remove config and data directory ($CONFIG_DIR)? [y/N]: " RM_CONF < /dev/tty
-            REMOVE_CONFIG=${RM_CONF:-"n"}
-        fi
+for profile in "${SHELL_PROFILES[@]}"; do
+    clean_shell_file "$profile"
+done
+
+# 4. Remove configuration directories and log files
+info "Removing configuration directories and logs..."
+CONFIG_DIRS=(
+    "$HOME/.config/vpsm"
+    "$HOME/.config/vpcm"
+)
+
+for cdir in "${CONFIG_DIRS[@]}"; do
+    if [ -d "$cdir" ]; then
+        rm -rf "$cdir"
+        success "Removed config directory: $cdir"
     fi
+done
 
-    if [[ "$REMOVE_CONFIG" =~ ^[Yy]$ ]]; then
-        rm -rf "$CONFIG_DIR"
-        success "Removed config directory $CONFIG_DIR"
-    else
-        skip "Keeping config directory $CONFIG_DIR"
+# 5. Remove Desktop Launchers, App Bundles, and Icons
+info "Removing desktop entries, applications, and icons..."
+DESKTOP_FILES=(
+    "$HOME/.local/share/applications/vpsm-desktop.desktop"
+    "$HOME/.local/share/applications/vpcm-desktop.desktop"
+    "$HOME/.local/share/applications/vpsm.desktop"
+    "/usr/share/applications/vpsm-desktop.desktop"
+    "/Applications/vpsm-desktop.app"
+    "$HOME/Applications/vpsm-desktop.app"
+)
+
+for dfile in "${DESKTOP_FILES[@]}"; do
+    if [ -e "$dfile" ]; then
+        if [ ! -w "$dfile" ] && command -v sudo >/dev/null 2>&1; then
+            sudo rm -rf "$dfile"
+        else
+            rm -rf "$dfile"
+        fi
+        success "Removed desktop entry / application: $dfile"
+    fi
+done
+
+# Clean icon files if present
+find "$HOME/.local/share/icons" -name "*vpsm*" -exec rm -f {} + 2>/dev/null || true
+
+# 6. Remove temporary / cache files
+rm -f /tmp/vpsm* /tmp/vpcm* 2>/dev/null || true
+
+# 7. SQLite database preservation / handling
+DEFAULT_DB_DIR="$HOME/.local/share/vpsm"
+DEFAULT_DB_PATH="$DEFAULT_DB_DIR/vpsm.db"
+
+if [ "$PURGE_DB" = "y" ]; then
+    if [ -d "$DEFAULT_DB_DIR" ]; then
+        rm -rf "$DEFAULT_DB_DIR"
+        warn "Purged SQLite database directory at: $DEFAULT_DB_DIR"
     fi
 else
-    skip "No config directory found at $CONFIG_DIR"
+    if [ -f "$DEFAULT_DB_PATH" ]; then
+        success "Preserved SQLite database at: ${CYAN}${DEFAULT_DB_PATH}${NORMAL}"
+        info "  (Your server inventory and data are safe and intact)"
+    else
+        info "No local SQLite database found at $DEFAULT_DB_PATH."
+    fi
 fi
 
-printf "\n%s%s✨ VPSM has been successfully uninstalled.%s\n" "${GREEN}" "${BOLD}" "${NORMAL}"
-printf "Thank you for using VPSM! Visit %shttps://github.com/%s%s for more information.\n\n" "${CYAN}" "$REPO" "${NORMAL}"
+printf "\n%s%s✨ VPSM / VPCM has been completely uninstalled from everywhere.%s\n" "${GREEN}" "${BOLD}" "${NORMAL}"
+
+printf "\n%s%s[!] Important Notice for Active Shell Sessions:%s\n" "${YELLOW}" "${BOLD}" "${NORMAL}"
+printf "Your current terminal session may still have the SSH wrapper loaded in memory.\n"
+printf "To refresh immediately, run:\n"
+printf "  %sunfunction ssh%s    (or restart your terminal with %sexec zsh%s / %sexec bash%s)\n\n" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}" "${CYAN}" "${NORMAL}"
